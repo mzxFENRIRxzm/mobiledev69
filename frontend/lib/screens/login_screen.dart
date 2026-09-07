@@ -399,46 +399,6 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 
-  void _showTokenDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF16213E),
-          title: const Text('JWT Tokens', style: TextStyle(color: Colors.white)),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          content: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('Access Token:', style: TextStyle(color: Color(0xFFE94560), fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                SelectableText(
-                  widget.apiService.accessToken ?? 'N/A',
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
-                ),
-                const SizedBox(height: 16),
-                const Text('Refresh Token:', style: TextStyle(color: Color(0xFF00D09C), fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                SelectableText(
-                  widget.apiService.refreshToken ?? 'N/A',
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('ปิด', style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   void _handleLogout() {
     widget.apiService.logout();
     Navigator.pushReplacement(
