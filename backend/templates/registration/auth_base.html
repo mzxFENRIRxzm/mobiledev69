@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>{% block title %}เข้าสู่ระบบ{% endblock %} · THE_X</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#101214;color:#f4f4f5;min-height:100svh;display:flex;flex-direction:column}a{color:#e9bd69;text-underline-offset:4px}header{padding:28px 6vw;border-bottom:1px solid #ffffff0d;display:flex;align-items:center;gap:16px}.brand{font-size:24px;letter-spacing:5px;font-weight:900}.brand span{color:#e9bd69}.tagline{color:#96989c;font-size:12px;border-left:1px solid #424449;padding-left:16px}main{width:min(100%,492px);padding:40px 20px;margin:auto}.card{background:#1b1e22;border:1px solid #35383e;border-radius:22px;padding:32px;box-shadow:0 24px 80px #0004}.mark{width:56px;height:56px;margin:0 auto 20px;border-radius:16px;background:#e9bd6912;border:1px solid #e9bd6930;color:#e9bd69;display:grid;place-items:center}.eyebrow{font-size:11px;letter-spacing:2px;color:#e9bd69;text-transform:uppercase;text-align:center}h1{text-align:center;font-size:28px;margin:8px 0 10px;line-height:1.4}.subtitle{text-align:center;color:#aaadb3;line-height:1.7;font-size:14px;margin:0 0 28px}label{display:block;font-size:14px;font-weight:600;margin:20px 0 8px}input[type=text],input[type=password]{width:100%;border:1px solid #484c54;border-radius:10px;background:#121518;color:#fff;font:inherit;font-size:16px;padding:14px;min-height:50px}input::placeholder{color:#858992}input:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid #e9bd69;outline-offset:3px}.password-wrap{position:relative}.password-wrap input{padding-right:78px}.toggle{position:absolute;right:6px;top:6px;bottom:6px;background:transparent;border:0;color:#e9bd69;font:inherit;font-size:13px;padding:0 10px;cursor:pointer;border-radius:6px}.primary,.secondary{display:block;width:100%;padding:15px 18px;margin-top:24px;border-radius:10px;font:inherit;font-size:16px;font-weight:700;cursor:pointer;text-align:center;text-decoration:none}.primary{border:1px solid #ed655e;background:#c93832;color:#fff}.primary:hover{background:#dc453e}.secondary{background:transparent;border:1px solid #484c54;color:#d8dade;margin-top:10px}.primary:disabled{opacity:.7;cursor:wait}.error{background:#e44a4414;border:1px solid #b95550;border-radius:10px;padding:12px 14px;color:#ffb7b2;font-size:14px;line-height:1.6;margin-bottom:20px}.errorlist{list-style:none;margin:6px 0;padding:0;color:#ffb7b2;font-size:13px}.note{font-size:12px;line-height:1.7;color:#969ba4;text-align:center;margin:20px 0 0}.account{border:1px solid #484c54;border-radius:10px;padding:14px;overflow-wrap:anywhere;color:#e9bd69}.scopes{padding-left:22px;color:#c1c4ca;font-size:14px;line-height:1.8}.scopes li{margin:8px 0}footer{text-align:center;color:#767b84;font-size:11px;padding:18px 20px 26px;letter-spacing:1px}@media(max-width:420px){header{padding:20px}.tagline{display:none}main{padding:24px 14px}.card{padding:24px 20px}h1{font-size:25px}}
+  </style>
+</head>
+<body>
+  <header><div class="brand">THE_<span>X</span></div><span class="tagline">YOUR RIDE, CARED FOR</span></header>
+  <main><section class="card" aria-labelledby="page-title">{% block content %}{% endblock %}</section></main>
+  <footer>THE_X · ดูแลรถและทุกการเดินทางของคุณ</footer>
+  <script>window.addEventListener('pageshow', function(event) { if (event.persisted) window.location.reload(); });</script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

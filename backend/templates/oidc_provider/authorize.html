@@ -1,0 +1,15 @@
+{% extends 'registration/auth_base.html' %}
+{% block title %}ยืนยันการเข้าใช้งาน{% endblock %}
+{% block content %}
+<p class="eyebrow">ONE MORE STEP</p>
+<h1 id="page-title">ยืนยันการเข้าใช้งาน</h1>
+<p class="subtitle">อนุญาตให้ {{ client.name }} ใช้ข้อมูลบัญชีของคุณเพื่อเข้าใช้งานแอป</p>
+<div class="account">บัญชี: <strong>{{ request.user.username }}</strong></div>
+<form method="post" action="{% url 'oidc_provider:authorize' %}">
+  {% csrf_token %}{{ hidden_inputs }}
+  <ul class="scopes">{% for scope in scopes %}<li><strong>{{ scope.name }}</strong><br>{{ scope.description }}</li>{% endfor %}</ul>
+  <button class="primary" name="allow" value="Authorize" type="submit">ยืนยันและเข้าสู่ THE_X</button>
+  <button class="secondary" type="submit">ยกเลิก</button>
+</form>
+<p class="note">ตรวจสอบชื่อบัญชีก่อนยืนยันทุกครั้ง</p>
+{% endblock %}

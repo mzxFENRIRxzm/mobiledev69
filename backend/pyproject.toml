@@ -1,0 +1,14 @@
+[project]
+name = "the-x-backend"
+version = "0.1.0"
+description = "THE_X motorcycle service API and OIDC provider"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+  "django>=5.2,<5.3",
+  "djangorestframework>=3.16,<3.17",
+  "django-oidc-provider>=0.8,<0.9",
+  "django-cors-headers>=4.7,<5",
+  "dj-database-url>=3,<4",
+  "psycopg[binary]>=3.2,<4",
+  "python-dotenv>=1.1,<2",
+]

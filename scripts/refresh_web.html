@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="th"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>THE_X · โหลดแอปล่าสุด</title>
+<body style="font-family:system-ui;background:#101719;color:#f4f5ef;padding:32px">
+<h1>โหลด THE_X เวอร์ชันล่าสุด</h1>
+<p id="status">กำลังอัปเดตไฟล์แอป โดยเก็บข้อมูลเข้าสู่ระบบไว้…</p>
+<script>
+(async () => {
+  try {
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (const registration of registrations) {
+        const workers = [registration.active, registration.waiting, registration.installing].filter(Boolean);
+        if (workers.some(worker => new URL(worker.scriptURL).pathname === '/flutter_service_worker.js')) {
+          await registration.unregister();
+        }
+      }
+    }
+    if ('caches' in window) {
+      for (const name of ['flutter-app-cache', 'flutter-temp-cache', 'flutter-app-manifest']) {
+        await caches.delete(name);
+      }
+    }
+    // A new navigation releases the old worker; localStorage/IndexedDB/cookies remain intact.
+    location.replace('/garage?updated=' + Date.now());
+  } catch (_) {
+    document.getElementById('status').textContent = 'โหลดใหม่ไม่สำเร็จ กรุณาปิดแท็บ THE_X อื่นแล้วเปิดหน้านี้อีกครั้ง';
+  }
+})();
+</script></body></html>

@@ -1,0 +1,17 @@
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.db
+.dart_tool/
+build/
+.flutter-plugins-dependencies
+staticfiles/
+media/
+.idea/
+*.iml
+.local/
+node_modules/

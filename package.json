@@ -1,0 +1,14 @@
+{
+  "name": "the-x-browser-tests",
+  "private": true,
+  "scripts": {
+    "test:e2e": "node scripts/browser_smoke.cjs",
+    "test:e2e:shops": "node scripts/browser_shops.cjs",
+    "test:e2e:accounts": "node scripts/browser_accounts.cjs",
+    "test:e2e:roles": "node scripts/browser_roles.cjs",
+    "test:e2e:shop-access": "node scripts/browser_shop_access.cjs",
+    "test:e2e:cache": "node scripts/browser_cache.cjs",
+    "test:e2e:phase3": "npm run test:e2e && npm run test:e2e:shops && npm run test:e2e:accounts && npm run test:e2e:roles && npm run test:e2e:shop-access && npm run test:e2e:cache"
+  },
+  "devDependencies": {"playwright": "1.62.1"}
+}
