@@ -1,0 +1,14 @@
+{% extends 'registration/auth_base.html' %}
+{% block title %}ผลการยืนยันอีเมล{% endblock %}
+{% block content %}
+<p class="eyebrow">VERIFY EMAIL</p>
+{% if verified %}
+<h1 id="page-title">ยืนยันอีเมลแล้ว</h1>
+<p class="subtitle" role="status">บัญชีพร้อมใช้งานแล้ว กลับไปแท็บ THE_X เดิมเพื่อเข้าสู่ระบบ หรือเปิดหน้าแอปเพื่อเริ่มใหม่</p>
+<a class="primary" href="{{ frontend_login_url }}">ไปหน้าเข้าสู่ระบบ THE_X</a>
+{% else %}
+<h1 id="page-title">ลิงก์ใช้ไม่ได้หรือหมดอายุ</h1>
+<p class="subtitle" role="alert">กรุณาขอลิงก์ยืนยันฉบับใหม่</p>
+<a class="secondary" href="{% url 'resend-verification' %}">ส่งลิงก์ยืนยันอีกครั้ง</a>
+{% endif %}
+{% endblock %}

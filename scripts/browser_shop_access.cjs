@@ -128,7 +128,12 @@ print(json.dumps({'prefix':prefix,'password':password,'users':{k:{'id':v.pk,'use
   await Promise.all([control.waitForURL('**/admin/garage/shop/'), control.locator('[name=_save]').click()]);
   await reloadList(a, 'shops');
   await a.getByRole('button', { name: 'แก้ไขข้อมูลร้าน', exact: true }).click();
-  await a.getByRole('textbox', { name: 'รายละเอียดบริการ', exact: true }).fill('Updated service description');
+  const serviceDescription = a.getByRole('textbox', { name: 'รายละเอียดบริการ', exact: true });
+  await serviceDescription.click();
+  await serviceDescription.press('ControlOrMeta+A');
+  await serviceDescription.pressSequentially('Updated service description', { delay: 20 });
+  await serviceDescription.press('Tab');
+  assert.equal(await serviceDescription.inputValue(), 'Updated service description');
   await a.getByRole('switch', { name: 'เปิดรับการจองใหม่' }).click();
   const savedShop = a.waitForResponse(r => r.url().endsWith(`/shops/${fixture.shops.a.id}/`) && r.request().method() === 'PATCH');
   await a.getByRole('button', { name: 'บันทึก', exact: true }).click();
@@ -145,7 +150,11 @@ print(json.dumps({'prefix':prefix,'password':password,'users':{k:{'id':v.pk,'use
   await a.getByRole('button', { name: 'งานซ่อม', exact: true }).click();
   await a.getByRole('button', { name: new RegExp(fixture.prefix) }).click();
   await transition(a, fixture.booking, 'ยกเลิกการจอง', 400, '');
-  await a.getByRole('textbox', { name: 'เหตุผลที่ยกเลิก (ร้านต้องระบุ)' }).fill('Parts unavailable');
+  const cancellationReason = a.getByRole('textbox', { name: 'เหตุผลที่ยกเลิก (ร้านต้องระบุ)' });
+  await cancellationReason.click();
+  await cancellationReason.pressSequentially('Parts unavailable', { delay: 20 });
+  await cancellationReason.press('Tab');
+  assert.equal(await cancellationReason.inputValue(), 'Parts unavailable');
   const cancellation = a.waitForResponse(r => r.url().endsWith(`/bookings/${fixture.booking}/transition/`));
   await a.getByRole('button', { name: 'ยืนยัน', exact: true }).click();
   assert.equal((await cancellation).status(), 200);

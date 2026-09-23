@@ -2,13 +2,21 @@
   "name": "the-x-browser-tests",
   "private": true,
   "scripts": {
+    "test:e2e:profile": "node scripts/browser_profile.cjs",
+    "test:startup": "node scripts/test_web_startup.cjs",
+    "test:e2e:admin-entry": "node scripts/browser_admin_entry.cjs",
     "test:e2e": "node scripts/browser_smoke.cjs",
     "test:e2e:shops": "node scripts/browser_shops.cjs",
     "test:e2e:accounts": "node scripts/browser_accounts.cjs",
+    "test:e2e:tabs": "node scripts/browser_tab_accounts.cjs",
     "test:e2e:roles": "node scripts/browser_roles.cjs",
     "test:e2e:shop-access": "node scripts/browser_shop_access.cjs",
     "test:e2e:cache": "node scripts/browser_cache.cjs",
-    "test:e2e:phase3": "npm run test:e2e && npm run test:e2e:shops && npm run test:e2e:accounts && npm run test:e2e:roles && npm run test:e2e:shop-access && npm run test:e2e:cache"
+    "test:e2e:registration": "node scripts/browser_registration.cjs",
+    "test:e2e:provider-registration": "node scripts/browser_provider_registration.cjs",
+    "test:e2e:registration-layout": "node scripts/browser_registration_layout.cjs",
+    "test:e2e:phase3": "npm run test:e2e && npm run test:e2e:shops && npm run test:e2e:accounts && npm run test:e2e:roles && npm run test:e2e:shop-access && npm run test:e2e:cache",
+    "test:e2e:phase4": "npm run test:e2e:registration && npm run test:e2e:provider-registration && npm run test:e2e:registration-layout && npm run test:e2e:profile && npm run test:e2e:tabs && npm run test:e2e:admin-entry && npm run test:e2e:accounts"
   },
   "devDependencies": {"playwright": "1.62.1"}
 }

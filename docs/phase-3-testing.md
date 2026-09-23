@@ -53,14 +53,30 @@ uv run manage.py runserver 127.0.0.1:8000
 Terminal 2:
 
 ```powershell
-Set-Location 'D:\Project\Project_Flutter\mobiledev69\frontend'
-& 'D:\flutter\bin\flutter.bat' build web --no-wasm-dry-run
-if ($LASTEXITCODE -ne 0) { throw 'Flutter build failed' }
-Set-Location 'D:\Project\Project_Flutter\mobiledev69'
+# build-web.ps1
+$frontendPath = "D:\Project\Project_Flutter\mobiledev69\frontend"
+$rootPath     = "D:\Project\Project_Flutter\mobiledev69"
+$flutterExe   = "D:\flutter\bin\flutter.bat"
+
+# 1. Build Flutter web
+Set-Location $frontendPath
+& $flutterExe build web --no-wasm-dry-run
+if ($LASTEXITCODE -ne 0) {
+    throw 'Flutter build failed'
+}
+
+# 2. Run preview server
+Set-Location $rootPath
 uv run --python 3.12 --no-project scripts/preview_web.py
+
+# 3. Run ในคำสั่งเดียวสามารถใช้แทนข้อ 2 ได้
+Set-Location 'D:\Project\Project_Flutter\mobiledev69\frontend'
+& 'D:\flutter\bin\flutter.bat' run -d web-server --web-hostname localhost --web-port 50000 --no-web-experimental-hot-reload
 ```
 
-เปิดทั้งสอง Terminal ทิ้งไว้ เข้าแอปที่ `http://localhost:50000/garage` ไม่ต้องเปิด Backend หน้า `/` ซึ่งไม่มี route และแสดง 404
+สำหรับโหมด debug ให้ใช้ `flutter run -d web-server` ตาม [README](../README.md) แทน Preview ใน Terminal นี้ อย่ารันทั้งสองตัวบนพอร์ต 50000 พร้อมกัน
+
+เปิดทั้งสอง Terminal ทิ้งไว้ เข้าแอปที่ `http://localhost:50000` ไม่ต้องเปิด Backend หน้า `/` ซึ่งไม่มี route และแสดง 404
 ## ผู้ดูแลสร้างร้านและสมาชิกช่าง
 
 ใช้ superuser เดิม หากยังไม่มีให้สร้างใน Terminal แยก ระบบจะถามรหัสผ่านโดยไม่ฝังในคำสั่ง:

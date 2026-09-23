@@ -1,0 +1,12 @@
+{% extends 'registration/auth_base.html' %}
+{% block extrahead %}<meta name="referrer" content="same-origin">{% endblock %}
+{% block title %}ยืนยันอีเมล{% endblock %}
+{% block content %}
+<p class="eyebrow">VERIFY EMAIL</p>
+<h1 id="page-title">ยืนยันอีเมล THE_X</h1>
+<p class="subtitle">กดยืนยันเพื่อเปิดใช้งานบัญชีหรือเปลี่ยนอีเมลที่รอดำเนินการ</p>
+<form method="post">
+  {% csrf_token %}
+  <button class="primary" type="submit">ยืนยันอีเมล</button>
+</form>
+{% endblock %}

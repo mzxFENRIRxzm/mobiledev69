@@ -1,9 +1,11 @@
 from django.contrib import admin
+from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin
 from django.db.models import Count
 from .roles import RoleChangeForm, RoleCreationForm
-from .models import Motorcycle, Shop, Booking, BookingEvent
+from .models import Motorcycle, Shop, Booking, BookingEvent, UserProfile
+from .uploads import clean_shop_photo
 
 admin.site.unregister(get_user_model())
 admin.site.site_header = "THE_X · จัดการระบบ"
@@ -30,11 +32,12 @@ class RoleFilter(admin.SimpleListFilter):
 
 @admin.register(get_user_model())
 class TheXUserAdmin(UserAdmin):
+    readonly_fields = ('contact_phone',)
     form = RoleChangeForm
     add_form = RoleCreationForm
     fieldsets = (
         (None, {"fields": ("username", "password")}),
-        ("ข้อมูลผู้ใช้", {"fields": ("first_name", "last_name", "email")}),
+        ("ข้อมูลผู้ใช้", {"fields": ("first_name", "last_name", "email", "contact_phone")}),
         ("สิทธิ์ THE_X", {"fields": ("role", "is_active"),
          "description": "Adminuser มีสิทธิ์ดูแลระบบทั้งหมด; Mechanicuser ต้องกำหนดร้านใน Shops ด้วย"}),
     )
@@ -46,7 +49,11 @@ class TheXUserAdmin(UserAdmin):
     list_per_page = 30
 
     def get_queryset(self, request):
-        return super().get_queryset(request).prefetch_related("groups")
+        return super().get_queryset(request).prefetch_related("groups").select_related('profile')
+
+    @admin.display(description='เบอร์โทรศัพท์')
+    def contact_phone(self, obj):
+        return obj.profile.phone if hasattr(obj, 'profile') else '—'
 
     @admin.display(description="บทบาท THE_X")
     def the_x_role(self, obj):
@@ -80,15 +87,26 @@ class MotorcycleAdmin(admin.ModelAdmin):
     def get_readonly_fields(self, request, obj=None):
         return ("created_at", "owner") if obj else ("created_at",)
 
+class ShopAdminForm(forms.ModelForm):
+    class Meta:
+        model = Shop
+        fields = '__all__'
+
+    def clean_photo(self):
+        photo = self.cleaned_data.get('photo')
+        return clean_shop_photo(photo) if 'photo' in self.files else photo
+
+
 @admin.register(Shop)
 class ShopAdmin(admin.ModelAdmin):
+    form = ShopAdminForm
     list_display = ["name", "phone", "accepting_bookings", "mechanic_count"]
     list_filter = ("accepting_bookings",)
     search_fields = ("name", "address", "phone", "mechanics__username")
     filter_horizontal = ["mechanics"]
     list_per_page = 30
     fieldsets = (
-        ("ข้อมูลร้าน", {"fields": ("name", "address", "phone", "description")}),
+        ("ข้อมูลร้าน", {"fields": ("name", "address", "phone", "description", "photo", "latitude", "longitude")}),
         ("การรับงานและสมาชิก", {"fields": ("accepting_bookings", "mechanics")}),
     )
 

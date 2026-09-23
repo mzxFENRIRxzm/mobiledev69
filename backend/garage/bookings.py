@@ -26,7 +26,8 @@ class BookingEventSerializer(serializers.ModelSerializer):
 
 
 class BookingSerializer(serializers.ModelSerializer):
-    shop = serializers.PrimaryKeyRelatedField(queryset=Shop.objects.filter(accepting_bookings=True), required=True, allow_null=False)
+    shop = serializers.PrimaryKeyRelatedField(queryset=Shop.objects.filter(
+        accepting_bookings=True, awaiting_owner_verification=False), required=True, allow_null=False)
     customer_name = serializers.CharField(source="customer.username", read_only=True)
     mechanic_name = serializers.CharField(source="mechanic.username", read_only=True, default=None)
     events = BookingEventSerializer(many=True, read_only=True)
@@ -70,7 +71,7 @@ class BookingViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.Retr
         try:
             with transaction.atomic():
                 shop = Shop.objects.select_for_update().get(pk=serializer.validated_data["shop"].pk)
-                if not shop.accepting_bookings:
+                if not shop.accepting_bookings or shop.awaiting_owner_verification:
                     raise Conflict("ร้านนี้ปิดรับการจองแล้ว กรุณาเลือกร้านอื่น")
                 bike = Motorcycle.objects.select_for_update().get(pk=serializer.validated_data["motorcycle"].pk, owner=self.request.user)
                 booking = serializer.save(customer=self.request.user, shop_name=shop.name,

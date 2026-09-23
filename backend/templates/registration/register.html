@@ -1,0 +1,52 @@
+{% extends 'registration/auth_base.html' %}
+{% load static %}
+{% block title %}สมัครสมาชิก{% endblock %}
+{% block extrahead %}
+<link rel="stylesheet" href="{% static 'garage/vendor/leaflet/leaflet.css' %}">
+<link rel="stylesheet" href="{% static 'garage/registration.css' %}">
+<script src="{% static 'garage/vendor/leaflet/leaflet.js' %}" defer></script>
+<script src="{% static 'garage/registration.js' %}?v=20260921-bidirectional" defer></script>
+{% endblock %}
+{% block content %}
+<p class="eyebrow">JOIN THE_X</p>
+<h1 id="page-title">สมัครสมาชิก</h1>
+<p class="subtitle">สมัครเป็นสมาชิกทั่วไป หรือเปิดร้านให้บริการซ่อมรถจักรยานยนต์</p>
+{% if form.non_field_errors %}<div class="error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ next }}">
+  {% for field in account_fields %}
+    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {{ field }}
+    {{ field.errors }}
+    {% if field.help_text %}<div class="field-help">{{ field.help_text|safe }}</div>{% endif %}
+  {% endfor %}
+  <fieldset id="shop-fields">
+    <legend>ข้อมูลร้านบริการ</legend>
+    <p class="field-help">เบอร์โทรด้านบนจะใช้เป็นเบอร์ติดต่อร้าน ที่อยู่ รูป และหมุดร้านจะแสดงให้ลูกค้าเห็น</p>
+    {% for field in shop_fields %}
+      {% if field.is_hidden %}
+        {{ field }}
+      {% else %}
+      <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+      {{ field }}{{ field.errors }}
+      {% if field.help_text %}<div class="field-help">{{ field.help_text }}</div>{% endif %}
+      {% if field.name == 'shop_photo' %}<img id="shop-photo-preview" alt="ตัวอย่างรูปร้าน" hidden>{% endif %}
+      {% if field.name == 'shop_address' %}
+        <p class="field-help">ปักหมุดเพื่อเติมที่อยู่ หรือพิมพ์ที่อยู่แล้วรอสักครู่เพื่อค้นหาหมุดอัตโนมัติ ตรวจสอบตำแหน่งและลากหมุดปรับได้</p>
+        <button type="button" id="address-from-pin" class="address-retry" disabled>เติมที่อยู่จากหมุดอีกครั้ง</button>
+        <p id="address-status" class="field-help" role="status"></p>
+      {% endif %}
+      {% endif %}
+    {% endfor %}
+    <p id="map-help" class="field-help">คลิกบนแผนที่เพื่อปักหมุด หรือลากหมุดเพื่อปรับตำแหน่งร้าน</p>
+    <div id="shop-map" role="region" aria-label="แผนที่ตำแหน่งร้าน" aria-describedby="map-help"></div>
+    <p id="map-status" class="field-help" role="status">ยังไม่ได้ปักหมุดร้าน</p>
+    {{ form.latitude.errors }}{{ form.longitude.errors }}
+    <p class="field-help">ข้อมูลที่อยู่ © OpenStreetMap contributors · ค้นหาด้วย Photon</p>
+    <noscript><p>กรุณาเปิด JavaScript เพื่อปักหมุดตำแหน่งร้าน</p></noscript>
+  </fieldset>
+  <button class="primary" type="submit" id="signup-submit">สร้างบัญชี</button>
+</form>
+<a class="secondary" href="{{ login_url }}">กลับเข้าสู่ระบบ</a>
+{% endblock %}

@@ -18,6 +18,11 @@ class GarageScreen extends StatelessWidget {
           style: TextStyle(letterSpacing: 4, fontWeight: FontWeight.w900),
         ),
         actions: [
+          IconButton(
+            onPressed: () => context.go('/profile'),
+            tooltip: 'โปรไฟล์ของฉัน',
+            icon: const Icon(Icons.person_outline),
+          ),
           TextButton(
             onPressed: () => context.go('/shops'),
             child: const Text('ค้นหาร้าน'),

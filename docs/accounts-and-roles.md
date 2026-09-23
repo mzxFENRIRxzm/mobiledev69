@@ -1,15 +1,21 @@
 # การล็อกอินพร้อมกันและจัดการบทบาท
 
+## อัปเดต 22 กันยายน 2026
+
+- Flutter Web ใช้ `sessionStorage` แยกแท็บสำหรับ OIDC token และ PKCE state แล้ว; แท็บใหม่เริ่มที่ Login, รีโหลดแท็บเดิมยังคงบัญชีเดิม
+- เมื่อเปิดรุ่นนี้ครั้งแรก ข้อมูล THE_X แบบเก่าที่เคยแชร์ผ่าน `localStorage` จะถูกลบเฉพาะคีย์ของแอป จึงต้องล็อกอินใหม่หนึ่งครั้ง
+- ตรวจด้วย Chrome profile เดียวกัน: Admin, Mechanic และ Customer ล็อกอินพร้อมกันได้ และ Logout ของ Mechanic ไม่กระทบอีกสองบัญชี (`node --preserve-symlinks --preserve-symlinks-main scripts/browser_tab_accounts.cjs`)
+
 ## อัปเดต 16 กันยายน 2026
 
 - ตรวจรุ่นล่าสุด: PostgreSQL ผ่าน 45 tests, Flutter ผ่าน 8 tests และ browser regression บัญชี/Role ผ่านอีกครั้ง ดูหลักฐานรวมใน [ขอบเขตสาม](phase-3-testing.md)
-- เปิด URL ปกติได้เลย ไม่ต้องใช้ `/refresh`: startup ล้างเฉพาะ Flutter cache และถอน service worker เก่าก่อนโหลดแอป โดยเก็บ cookie และ secure storage ไว้
+- เปิด URL ปกติได้เลย ไม่ต้องใช้ `/refresh`: startup ล้างเฉพาะ Flutter cache และถอน service worker เก่าก่อนโหลดแอป โดยเก็บ cookie และ session ของแท็บเดิมไว้
 - Preview ส่ง retirement worker ที่ URL เดิมเพื่อให้ worker ที่ติดตั้งไปแล้วอัปเดตตัวเอง; อาจมีการโหลดหน้าเดิมใหม่หนึ่งครั้งตอนย้ายจาก worker เก่า
 - Preview tests ผ่าน 4 กรณี และ Chrome บน origin จำลองผ่านการอัปเดต worker เก่า การคง session storage/cookies การรักษา OIDC callback และไม่ลบ cache อื่น
 - `flutter analyze` และ Web build ของหน้าล็อกอินล่าสุดผ่านแล้ว
 - หาก Preview ตัวเก่ารันอยู่ ต้องหยุดแล้วรัน `uv run --python 3.12 --no-project scripts/preview_web.py` ใหม่เพื่อโหลด Python ที่แก้
 
-หน้า Login / Consent / CSRF recovery ใช้การ์ดโทนเข้ม แดง–ทองที่ปรับจาก THE_ONE (`f4db01a`) มีปุ่มแสดงรหัสผ่านและข้อผิดพลาดภาษาไทย การกรอกรหัสผ่านยังอยู่ที่ Django OIDC และ callback ใช้ Authorization Code + PKCE เช่นเดิม ยังไม่รวมสมัครสมาชิกและลืมรหัสผ่าน
+หน้า Login / Consent / CSRF recovery ใช้การ์ดโทนเข้ม แดง–ทองที่ปรับจาก THE_ONE (`f4db01a`) มีปุ่มแสดงรหัสผ่านและข้อผิดพลาดภาษาไทย การกรอกรหัสผ่านยังอยู่ที่ Django OIDC และ callback ใช้ Authorization Code + PKCE เช่นเดิม ขอบเขต 4 เพิ่มสมัครสมาชิก ยืนยันอีเมล และลืมรหัสผ่านแล้ว
 
 ## ผลตรวจ 15 กันยายน 2026
 
@@ -35,7 +41,7 @@ Set-Location 'D:\Project\Project_Flutter\mobiledev69'
 
 สคริปต์เปิด profiles ถาวรสามชุดใน `.local/browser-profiles` ซึ่งไม่เข้า Git ใช้บัญชี Admin เดิม, `mechanic01`, `student01` ตามลำดับ โดยรหัสผ่านบัญชี demo ดูจาก environment ของเครื่อง ไม่ต้องสมัคร Google profiles ชื่อ profile ไม่ได้กำหนดสิทธิ์ของผู้ใช้
 
-ข้อจำกัด: ต้องเป็นคนละ Chrome profile / browser context จริง แท็บหลายแท็บหรือ Incognito หลายหน้าต่างใน profile เดียวกันแชร์ cookie/storage และไม่รองรับหลายบัญชีพร้อมกันในรุ่นนี้ การเก็บ session ใน secure storage ตามเดิมยังคงอยู่
+Flutter Web เก็บ OIDC session และ PKCE state ใน `sessionStorage` แยกตามแท็บ จึงใช้ Admin, Mechanic และ Customer พร้อมกันในแท็บของ Chrome profile เดียวกันได้ แท็บใหม่ต้องล็อกอินเอง และรีโหลดแท็บเดิมยังคงบัญชีเดิม Django Admin ที่ `localhost:8000` ยังใช้ session cookie ร่วมกันทั้ง profile จึงควรใช้คนละ Chrome profile หากต้องเปิด Django Admin หลายบัญชีพร้อมกัน
 
 ## เปลี่ยนบทบาท
 

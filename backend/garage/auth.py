@@ -29,4 +29,5 @@ def userinfo(claims, user):
     claims["name"] = user.get_full_name() or user.username
     claims["preferred_username"] = user.username
     claims["email"] = user.email
+    claims["email_verified"] = bool(getattr(getattr(user, 'profile', None), 'email_verified_at', None))
     return claims

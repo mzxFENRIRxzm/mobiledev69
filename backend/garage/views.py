@@ -5,7 +5,7 @@ from oidc_provider.models import Token
 from rest_framework import serializers, viewsets
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .models import Motorcycle
+from .models import Motorcycle, UserProfile
 from .serializers import MotorcycleSerializer
 from .roles import role_for
 
@@ -36,7 +36,8 @@ class MotorcycleViewSet(viewsets.ModelViewSet):
 @api_view(["GET"])
 def me(request):
     return Response({"id": request.user.pk, "username": request.user.username,
-                     "role": role_for(request.user)})
+                     "role": role_for(request.user),
+                     "phone": UserProfile.objects.filter(user=request.user).values_list('phone', flat=True).first() or ''})
 
 
 @api_view(["POST"])

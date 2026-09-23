@@ -4,6 +4,7 @@
 <p class="eyebrow">WELCOME BACK</p>
 <h1 id="page-title">เข้าสู่ระบบ</h1>
 <p class="subtitle">ยินดีต้อนรับกลับสู่ THE_X<br>เข้าสู่บัญชีของคุณเพื่อเริ่มต้นใช้งาน</p>
+{% if request.GET.registered == '1' %}<p class="note" role="status">สร้างบัญชีแล้ว กรุณาเข้าสู่ระบบเพื่อดำเนินการต่อ</p>{% endif %}
 {% if form.non_field_errors %}<div class="error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
 <form method="post" id="login-form">
   {% csrf_token %}
@@ -11,23 +12,17 @@
   <label for="id_username">ชื่อผู้ใช้</label>
   {{ form.username }}{{ form.username.errors }}
   <label for="id_password">รหัสผ่าน</label>
-  <div class="password-wrap">{{ form.password }}<button class="toggle" type="button" id="toggle-password" aria-label="แสดงรหัสผ่าน" aria-controls="id_password" aria-pressed="false">แสดง</button></div>
+  {{ form.password }}
   {{ form.password.errors }}
   <button class="primary" type="submit" id="login-submit">เข้าสู่ระบบ</button>
 </form>
-<p class="note">ใช้บัญชีเดียวกับที่ผู้ดูแลสร้างให้<br>ระบบจะเปิดหน้าที่ตรงกับบทบาทของคุณหลังเข้าสู่ระบบ</p>
+{% if signup_enabled %}<a class="secondary" href="{% url 'register' %}?next={{ next|urlencode }}">สมัครสมาชิกใหม่</a>{% endif %}
+<a class="secondary" href="{% url 'password-reset' %}">ลืมรหัสผ่าน</a>
+<a class="secondary" href="{% url 'resend-verification' %}">ส่งลิงก์ยืนยันอีเมลอีกครั้ง</a>
+<p class="note">ระบบจะเปิดหน้าที่ตรงกับบทบาทของคุณหลังเข้าสู่ระบบ</p>
 {% endblock %}
 {% block scripts %}
 <script>
-  const passwordInput = document.getElementById('id_password');
-  const toggle = document.getElementById('toggle-password');
-  toggle.addEventListener('click', function() {
-    const visible = passwordInput.type === 'password';
-    passwordInput.type = visible ? 'text' : 'password';
-    toggle.textContent = visible ? 'ซ่อน' : 'แสดง';
-    toggle.setAttribute('aria-label', visible ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน');
-    toggle.setAttribute('aria-pressed', String(visible));
-  });
   document.getElementById('login-form').addEventListener('submit', function() {
     const button = document.getElementById('login-submit');
     button.disabled = true;

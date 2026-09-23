@@ -22,6 +22,11 @@ class BookingScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(auth.isMechanic ? 'งานซ่อมของช่าง' : 'การจองซ่อม'),
         actions: [
+          IconButton(
+            onPressed: () => context.go('/profile'),
+            tooltip: 'โปรไฟล์ของฉัน',
+            icon: const Icon(Icons.person_outline),
+          ),
           TextButton(
             onPressed: () => context.go('/shops'),
             child: const Text('ร้านบริการ'),

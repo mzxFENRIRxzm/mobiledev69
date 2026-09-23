@@ -2,7 +2,12 @@
 
 แอปดูแลรถจักรยานยนต์ พัฒนาต่อยอดแนวคิดจาก [THE_ONE](https://github.com/zxSUPHASANxz/THE_ONE_FINAL/tree/f4db01a) เวอร์ชันก่อนเปลี่ยนหน้า chatbot เป็นธีมแดง–ทอง งานรายวิชาอยู่บน branch `project`
 
-สถานะการส่งมอบและหลักฐานทดสอบ: [ขอบเขตแรก](docs/phase-1-status.md), [ขอบเขตสอง](docs/phase-2-testing.md), [ขอบเขตสาม — ระบบร้านปัจจุบัน](docs/phase-3-testing.md)
+สถานะการส่งมอบและหลักฐานทดสอบ: [ขอบเขตแรก](docs/phase-1-status.md), [ขอบเขตสอง](docs/phase-2-testing.md), [ขอบเขตสาม — ระบบร้าน](docs/phase-3-testing.md), [ขอบเขตสี่ — บัญชีและโปรไฟล์](docs/phase-4-testing.md)
+
+ปิดขอบเขตสี่สำหรับ Flutter Web แล้ว: [สมัครสมาชิกทั่วไป/ผู้ให้บริการ พร้อมเบอร์โทร รูปร้าน และหมุดแผนที่](docs/phase-4-registration.md), ปุ่มแสดงรหัสผ่านทุกหน้า, [โปรไฟล์ลูกค้า/ช่าง](docs/phase-4-profile.md), [ยืนยันอีเมล/กู้รหัสผ่าน](docs/phase-4-email-accounts.md) และ session OIDC แยกแท็บ ผ่าน regression ทั้ง local และ public HTTPS tunnel เมื่อ 23 กันยายน 2026
+
+ต้องการให้โทรศัพท์หรือคอมพิวเตอร์เครื่องอื่นในเครือข่ายเดียวกันทดลองใช้ ให้ทำตาม [คู่มือเปิด THE_X ผ่าน LAN](docs/lan-access.md)
+หากอยู่นอกเครือข่ายเดียวกัน ใช้ [คู่มือ public HTTPS tunnel ด้วย ngrok](docs/public-tunnel.md)
 
 ## Features — ขอบเขตแรก
 
@@ -32,7 +37,17 @@
 
 ดู [วิธีเตรียมร้าน จัดการสมาชิก และทดสอบขอบเขตสาม](docs/phase-3-testing.md) กติกาการจองแยกร้านในขอบเขตนี้ใช้แทนคิวกลางเดิมของขอบเขตสอง
 
-ส่วนที่ยังไม่ได้ทำ: แชท AI/n8n สมัครสมาชิก และ deploy สาธารณะ รุ่นนี้ยังเป็น **local development สำหรับ Flutter Web** ไม่ใช่ Android/iOS build หรือ production deployment วันนัดเป็นคำขอ ยังไม่มีระบบคำนวณช่องเวลาว่างของร้าน
+## Features — ขอบเขตสี่
+
+- สมัคร Customer หรือ Mechanic; ผู้ให้บริการต้องระบุข้อมูลร้าน รูป ที่อยู่ และหมุดแผนที่
+- ยืนยันอีเมลก่อนเข้าใช้ ส่งลิงก์ใหม่ และกู้รหัสผ่านด้วย token ใช้ครั้งเดียว
+- Customer และ Mechanic แก้ข้อมูลส่วนตัวของตน โดยการเปลี่ยนอีเมลต้องยืนยันก่อน
+- เก็บ OIDC token/PKCE ใน `sessionStorage`: reload แท็บเดิมยังอยู่ แต่แท็บใหม่เริ่ม Login และใช้หลายบัญชีพร้อมกันได้
+- เปิดผ่าน LAN สำหรับเครือข่ายทดสอบ หรือ ngrok HTTPS URL เดียวสำหรับ Flutter, API และ OIDC
+
+ดู [ผลตรวจและเกณฑ์ปิดขอบเขตสี่](docs/phase-4-testing.md)
+
+ส่วนที่ยังไม่ได้ทำ: แชท AI/n8n การส่งอีเมลผ่าน SMTP จริง และ production deployment ถาวร รุ่นนี้ยังเป็น **Flutter Web สำหรับ local/temporary demo** ไม่ใช่ Android/iOS build หรือ production deployment วันนัดเป็นคำขอ ยังไม่มีระบบคำนวณช่องเวลาว่างของร้าน
 
 ## ใช้ Admin, Mechanic และ Customer พร้อมกัน
 
@@ -54,7 +69,7 @@ Set-Location 'D:\Project\Project_Flutter\mobiledev69\backend'
 uv run manage.py createsuperuser
 ```
 
-เปิดใหม่ด้วยสคริปต์เดิมจะใช้ profiles เดิม จึงรักษา session ได้ แท็บหรือหน้าต่าง Incognito หลายบานใน profile เดียวกันไม่ใช่ session แยก; ไม่รองรับหลายบัญชีใน profile เดียวกันในรุ่นนี้ การ Logout ทุกอุปกรณ์มีผลต่อบัญชีนั้นเท่านั้น
+Flutter Web เก็บ OIDC session แยกตามแท็บแล้ว: Admin, Mechanic และ Customer ล็อกอินพร้อมกันในแท็บของ Chrome profile เดียวกันได้ รีโหลดแท็บเดิมยังคงล็อกอิน แต่แท็บใหม่เริ่มที่หน้าเข้าสู่ระบบ ข้อมูลล็อกอินที่รุ่นเก่าเคยเก็บร่วมกันจะถูกลบเมื่อเปิดแอปรุ่นนี้ จึงต้องล็อกอินใหม่ครั้งเดียว ส่วน Django Admin (`localhost:8000`) ยังใช้ cookie ร่วมกันทั้ง profile หากต้องใช้ Django Admin หลายบัญชีพร้อมกันให้แยก Chrome profile
 
 ### Admin กำหนดและเปลี่ยนบทบาท
 
@@ -162,7 +177,7 @@ uv run manage.py runserver 127.0.0.1:8000
 ```powershell
 Set-Location 'D:\Project\Project_Flutter\mobiledev69\frontend'
 & 'D:\flutter\bin\flutter.bat' pub get
-& 'D:\flutter\bin\flutter.bat' build web --no-wasm-dry-run
+& 'D:\flutter\bin\flutter.bat' build web --no-wasm-dry-run --no-web-resources-cdn
 if ($LASTEXITCODE -ne 0) { throw 'Flutter build failed; fix the error before starting preview' }
 Set-Location 'D:\Project\Project_Flutter\mobiledev69'
 uv run --python 3.12 --no-project scripts/preview_web.py
@@ -180,12 +195,24 @@ Backend local อยู่ที่ `http://localhost:8000`; API คือ `/api
 
 ### ทางเลือกขณะพัฒนา — Flutter run
 
-ใช้แทน Frontend Preview ใน Terminal 2 เมื่อต้องการพัฒนาและใช้ hot reload อย่าเปิดทั้งสองแบบพร้อมกันบนพอร์ต 50000 สำหรับ E2E ให้ใช้ Preview ด้านบน:
+ใช้แทน Frontend Preview ใน Terminal 2 ขณะพัฒนา อย่าเปิดทั้งสองแบบพร้อมกันบนพอร์ต 50000 สำหรับ E2E ปกติให้ใช้ Preview ด้านบน:
 
 ```powershell
 Set-Location 'D:\Project\Project_Flutter\mobiledev69\frontend'
-& 'D:\flutter\bin\flutter.bat' run -d chrome --web-hostname localhost --web-port 50000
+& 'D:\flutter\bin\flutter.bat' run -d web-server --web-hostname localhost --web-port 50000 --no-web-experimental-hot-reload
 ```
+
+หาก Flutter แสดง `RemoteDebuggerExecutionContext: Timed out finding an execution context` หรือ `AppInspector ... contextId: null` ระหว่างเปลี่ยนจากแอปไปหน้า Django Login/OIDC หรือระหว่าง reload ให้ตรวจหน้าเว็บก่อน: ถ้าแอปยังทำงานได้ ข้อความนี้มาจากการเชื่อมต่อ Inspector ของ debug session ที่สูญเสีย execution context ระหว่างเปลี่ยนหน้า ไม่ใช่ข้อผิดพลาดจาก Django หรือ API หากหน้าเว็บค้างหรือขาว ให้หยุด Flutter ด้วย `Ctrl+C` แล้วเริ่ม `web-server` ใหม่ด้วยคำสั่งด้านบน อย่าเปิด Preview กับ Flutter พร้อมกันบนพอร์ต 50000 และอย่าเปิด URL `/callback` เก่าซ้ำ
+
+เมื่อขึ้นข้อความพร้อมให้บริการ ให้เปิด `http://localhost:50000/` ใน Chrome เอง คำสั่ง `web-server` จะไม่เปิดเบราว์เซอร์ให้อัตโนมัติ
+
+สำหรับ Flutter 3.44.2 ที่ใช้อยู่ ใช้ `web-server` และปิด experimental hot reload ตามคำสั่งนี้ การใช้ `-d chrome` ยังพบหน้า `/admin` จอขาวแม้ปิด hot reload แล้ว ขณะที่ `web-server` ผ่านการทดสอบด้านล่าง (มี [รายงานอาการ debug loader ใกล้เคียง](https://github.com/flutter/flutter/issues/188264)) ใช้ `R` เพื่อ hot restart หลังแก้ Dart โหมดนี้ยังเป็น debug; flag ถูกประกาศ deprecated แล้วจึงต้องทดสอบใหม่เมื่ออัปเกรด SDK ไม่ควรถือเป็นข้อกำหนดถาวรของแอป
+
+หากค้างหน้า callback ให้หยุด Flutter เดิมด้วย `Ctrl+C` แล้วเริ่มด้วยคำสั่งด้านบน เปิด `http://localhost:50000/` และล็อกอินใหม่ ไม่ใช้ URL callback เก่าที่มี code ซ้ำ ไม่ต้องล้างข้อมูลล็อกอินหรือเปลี่ยนค่า OIDC
+
+ตรวจบน Flutter 3.44.2 แบบ `web-server` แล้ว: เปิด `/admin` โดยไม่มี session แสดง login, ล็อกอิน Admin ผ่าน OIDC แล้วแสดงหน้าจัดการระบบ และ reload แท็บเดิมยังใช้ session เดิมได้ แท็บใหม่ต้องล็อกอินแยก ปุ่มจัดการผู้ใช้เปิด Django Admin ได้ ทดสอบด้วย `npm.cmd run test:e2e:admin-entry` ซึ่งสร้างและลบเฉพาะบัญชี Admin ชั่วคราวของชุดทดสอบ
+
+หน้าเว็บมีสถานะกำลังโหลดตั้งแต่ก่อน Flutter เริ่มทำงาน หากโหลด bootstrap ไม่สำเร็จหรือยังไม่แสดงเฟรมแรกภายใน 30 วินาที จะแสดงปุ่มลองใหม่โดยไม่ลบข้อมูลล็อกอิน ทดสอบด้วย `npm.cmd run test:startup` ส่วน acceptance suite หลายบัญชีเต็มชุดยังใช้ Preview ตามเดิม
 
 ### หยุดบริการ
 
@@ -224,7 +251,7 @@ docker compose stop
 
 1. เปิดหน้าต่าง Incognito เข้า `http://localhost:50000/garage` ต้องกลับหน้าล็อกอิน
 2. กด “เข้าสู่ระบบ THE_X” ต้องไปหน้าล็อกอินที่ `localhost:8000` ลองรหัสผ่านผิดก่อน ต้องเข้าไม่ได้ จากนั้นใช้บัญชีทดสอบจริงและยอมรับ Consent
-3. ต้องกลับมาโรงรถและแสดง `student01` กดรีเฟรช แล้วปิดแท็บ/เปิด URL ใหม่ ต้องยังอยู่ในระบบ (อย่าปิด Incognito ทุกหน้าต่าง เพราะเบราว์เซอร์จะล้างข้อมูลเอง)
+3. ต้องกลับมาโรงรถและแสดง `student01` กดรีเฟรชในแท็บเดิมต้องยังอยู่ในระบบ แต่เปิดแท็บใหม่เข้า URL เดิมต้องเห็นหน้าเข้าสู่ระบบ
 4. กด “เพิ่มรถของฉัน” แล้วบันทึกฟอร์มว่าง ต้องขึ้น validation จากนั้นกรอกยี่ห้อ `Honda`, รุ่น `PCX`, ทะเบียนทดสอบของคุณ, ปี `2024`, เลขไมล์ `100` แล้วบันทึก
 5. กดรายการรถเพื่อดูรายละเอียด แก้เลขไมล์เป็น `250` แล้วบันทึก รีเฟรชและตรวจว่าค่าใหม่ยังอยู่
 6. ค้นหาด้วยทะเบียน/รุ่น ต้องพบรถ; ค้นหาคำที่ไม่มี ต้องแสดงว่าไม่พบ

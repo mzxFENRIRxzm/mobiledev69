@@ -1,0 +1,14 @@
+{% extends 'registration/auth_base.html' %}
+{% block title %}ส่งลิงก์ยืนยันอีกครั้ง{% endblock %}
+{% block content %}
+<p class="eyebrow">VERIFY EMAIL</p>
+<h1 id="page-title">ส่งลิงก์ยืนยันอีกครั้ง</h1>
+<p class="subtitle">กรอกอีเมลที่ใช้สมัครหรืออีเมลใหม่ที่รอยืนยัน</p>
+<form method="post">
+  {% csrf_token %}
+  <label for="id_email">อีเมล</label>
+  {{ form.email }}{{ form.email.errors }}
+  <button class="primary" type="submit">ส่งลิงก์ยืนยัน</button>
+</form>
+<a class="secondary" href="/accounts/login/">กลับเข้าสู่ระบบ</a>
+{% endblock %}

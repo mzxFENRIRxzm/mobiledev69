@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../auth/auth_view_model.dart';
 import '../domain/shop.dart';
 import 'shop_view_model.dart';
@@ -15,6 +16,11 @@ class ShopScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('ร้านและศูนย์บริการ'),
         actions: [
+          IconButton(
+            onPressed: () => context.go('/profile'),
+            tooltip: 'โปรไฟล์ของฉัน',
+            icon: const Icon(Icons.person_outline),
+          ),
           TextButton(
             onPressed: () =>
                 context.go(auth.isMechanic ? '/jobs' : '/bookings'),
@@ -71,7 +77,45 @@ class ShopScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Text('ที่อยู่: ${shop.address}'),
+                        if (shop.photo != null && shop.photo!.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            child: Image.network(
+                              shop.photo!,
+                              height: 180,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              semanticLabel: 'รูปร้าน ${shop.name}',
+                              errorBuilder: (_, error, stack) =>
+                                  const Text('ไม่สามารถโหลดรูปร้านได้'),
+                            ),
+                          ),
                         Text('โทร: ${shop.phone}'),
+                        if (shop.latitude != null && shop.longitude != null)
+                          TextButton.icon(
+                            icon: const Icon(Icons.place_outlined),
+                            label: const Text('ดูตำแหน่งร้านบนแผนที่'),
+                            onPressed: () async {
+                              final uri =
+                                  Uri.https('www.openstreetmap.org', '/', {
+                                    'mlat': '${shop.latitude}',
+                                    'mlon': '${shop.longitude}',
+                                  }).replace(
+                                    fragment:
+                                        'map=17/${shop.latitude}/${shop.longitude}',
+                                  );
+                              final opened = await launchUrl(uri);
+                              if (!opened && context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'เปิดแผนที่ไม่ได้ กรุณาลองใหม่',
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                          ),
                         if (shop.description.isNotEmpty) Text(shop.description),
                         const SizedBox(height: 12),
                         Wrap(

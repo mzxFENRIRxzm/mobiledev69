@@ -1,4 +1,5 @@
-"""Local-only preview of the built Flutter app, with SPA route fallback."""
+"""Preview the built Flutter app with SPA route fallback."""
+import argparse
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -32,7 +33,7 @@ class Handler(SimpleHTTPRequestHandler):
         for header in ("If-Modified-Since", "If-None-Match"):
             if header in self.headers:
                 del self.headers[header]
-        if request_path in ("/", "/index.html", "/login", "/callback", "/garage", "/loading", "/bookings", "/jobs", "/shops", "/admin"):
+        if request_path in ("/", "/index.html", "/login", "/callback", "/garage", "/loading", "/bookings", "/jobs", "/shops", "/admin", "/profile"):
             # Also upgrade the last built index without editing build artifacts.
             # Other Dart changes still require flutter build web.
             payload = (web / "index.html").read_text(encoding="utf-8").replace(
@@ -55,8 +56,13 @@ class Handler(SimpleHTTPRequestHandler):
         pass  # Callback query strings may contain authorization codes.
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Serve the built THE_X Flutter web app")
+    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--port", type=int, default=50000)
+    args = parser.parse_args()
     if not (web / "index.html").exists():
         raise SystemExit("Missing frontend/build/web/index.html. Run flutter build web first.")
-    print("THE_X preview: http://localhost:50000", flush=True)
-    print("Open the normal app URL. Legacy Flutter cache is cleaned automatically; login storage is preserved.", flush=True)
-    ThreadingHTTPServer(("127.0.0.1", 50000), Handler).serve_forever()
+    display_host = "localhost" if args.host in ("127.0.0.1", "localhost") else args.host
+    print(f"THE_X preview: http://{display_host}:{args.port}", flush=True)
+    print("Open the normal app URL. Legacy Flutter cache is cleaned automatically; logins are per tab.", flush=True)
+    ThreadingHTTPServer((args.host, args.port), Handler).serve_forever()

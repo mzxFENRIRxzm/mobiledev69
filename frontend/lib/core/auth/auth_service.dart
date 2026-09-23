@@ -4,12 +4,14 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:openid_client/openid_client.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../config.dart';
+import 'auth_storage_base.dart';
 
 class AuthService {
-  final FlutterSecureStorage storage;
+  final AuthStorage storage;
   Credential? _credential;
   Future<String>? _refresh;
-  AuthService(this.storage);
+  AuthService(FlutterSecureStorage storage) : storage = SecureAuthStorage(storage);
+  AuthService.withStorage(this.storage);
 
   String _random() => base64UrlEncode(
     List.generate(48, (_) => Random.secure().nextInt(256)),

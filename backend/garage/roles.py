@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AdminUserCreationForm, UserChangeForm
 from django.contrib.auth.models import Group
 from .models import Booking
+from .registration import validate_unique_email
 
 
 ROLE_CHOICES = [("customer", "Customeruser"), ("mechanic", "Mechanicuser"), ("admin", "Adminuser")]
@@ -15,6 +16,9 @@ def role_for(user):
 
 
 class RoleFormMixin:
+    def clean_email(self):
+        return validate_unique_email(self.cleaned_data.get('email', ''), self.instance.pk)
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.initial["role"] = role_for(self.instance) if self.instance.pk else "customer"

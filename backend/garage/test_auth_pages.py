@@ -68,5 +68,6 @@ class LoginRecoveryTests(TestCase):
         client = Client(enforce_csrf_checks=True)
         response = client.post('/accounts/login/?next=https://example.com', {'username': 'someone'})
         self.assertEqual(response.status_code, 403)
-        self.assertTrue(response.context['retry_url'].startswith('/accounts/login/?'))
+        self.assertEqual(response.context['retry_url'], '/accounts/login/')
+        self.assertNotIn('example.com', response.context['retry_url'])
         self.assertIn('no-store', response['Cache-Control'])

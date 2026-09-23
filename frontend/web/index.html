@@ -33,6 +33,12 @@
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
+  <div id="the-x-startup" role="status" aria-live="polite"
+       style="position:fixed;inset:0;display:grid;place-content:center;gap:16px;padding:24px;background:#101719;color:#fff;font:16px sans-serif;text-align:center">
+    <strong style="font-size:28px;letter-spacing:4px">THE_X</strong>
+    <p id="the-x-startup-message">กำลังโหลดแอป…</p>
+    <button id="the-x-startup-retry" type="button" hidden>ลองใหม่</button>
+  </div>
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader

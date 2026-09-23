@@ -40,6 +40,8 @@ const server = http.createServer((req, res) => {
   await page.goto(origin);
   await page.evaluate(async () => {
     localStorage.setItem('session-probe', 'preserved');
+    localStorage.setItem('FlutterSecureStorage.the_x_session', 'obsolete');
+    localStorage.setItem('FlutterSecureStorage.the_x_pending', 'obsolete');
     document.cookie = 'login-probe=preserved; path=/';
     await navigator.serviceWorker.register('/flutter_service_worker.js');
     await navigator.serviceWorker.ready;
@@ -52,10 +54,12 @@ const server = http.createServer((req, res) => {
   await page.evaluate(async () => (await navigator.serviceWorker.getRegistration()).update());
   await page.waitForFunction(() => window.booted === '/garage?keep=1');
   assert.equal(await page.evaluate(() => localStorage.getItem('session-probe')), 'preserved');
+  assert.equal(await page.evaluate(() => localStorage.getItem('FlutterSecureStorage.the_x_session')), null);
+  assert.equal(await page.evaluate(() => localStorage.getItem('FlutterSecureStorage.the_x_pending')), null);
   assert.match(await page.evaluate(() => document.cookie), /login-probe=preserved/);
   assert.equal(await page.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).length), 0);
   assert.equal(await page.evaluate(() => caches.has('flutter-app-cache')), false);
-  console.log('PASS: legacy worker retires and normal URL loads latest app, retaining login storage');
+  console.log('PASS: legacy worker retires and clears only shared THE_X auth storage');
   await page.evaluate(async () => {
     await caches.open('flutter-temp-cache');
     await caches.open('unrelated-cache');
@@ -65,5 +69,18 @@ const server = http.createServer((req, res) => {
   assert.equal(await page.evaluate(() => caches.has('flutter-temp-cache')), false);
   assert.equal(await page.evaluate(() => caches.has('unrelated-cache')), true);
   console.log('PASS: startup preserves OIDC callback parameters and unrelated cache');
+
+  await page.evaluate(() => {
+    sessionStorage.setItem('FlutterSecureStorage.the_x_session', 'tab-one');
+    sessionStorage.setItem('FlutterSecureStorage.the_x_pending', 'tab-one-pkce');
+  });
+  const opened = context.waitForEvent('page');
+  await page.evaluate(() => window.open('/garage', '_blank'));
+  const copiedTab = await opened;
+  await copiedTab.waitForFunction(() => window.booted === '/garage');
+  assert.equal(await copiedTab.evaluate(() => sessionStorage.getItem('FlutterSecureStorage.the_x_session')), null);
+  assert.equal(await copiedTab.evaluate(() => sessionStorage.getItem('FlutterSecureStorage.the_x_pending')), null);
+  assert.equal(await page.evaluate(() => sessionStorage.getItem('FlutterSecureStorage.the_x_session')), 'tab-one');
+  console.log('PASS: an opened tab cannot inherit another tab\'s login or PKCE state');
 })().catch(error => { console.error(error.message); process.exitCode = 1; })
   .finally(async () => { if (browser) await browser.close(); await new Promise(resolve => server.close(resolve)); });

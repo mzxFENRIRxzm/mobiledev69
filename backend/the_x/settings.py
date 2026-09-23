@@ -8,6 +8,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
 DEBUG = os.getenv("DJANGO_DEBUG", "false").lower() == "true"
+# Keep public signup off by default in production until SMTP and shared cache are configured.
+PUBLIC_SIGNUP_ENABLED = os.getenv("PUBLIC_SIGNUP_ENABLED", str(DEBUG)).lower() == "true"
+# A tunnel demo can use HTTPS with DEBUG disabled while still letting a tester
+# complete signup without a configured SMTP server. Never enable this in a real
+# deployment because it does not prove ownership of the submitted email address.
+DEMO_EMAIL_VERIFICATION_LINK = os.getenv(
+    "DEMO_EMAIL_VERIFICATION_LINK", "false"
+).lower() == "true"
+GEOCODING_REVERSE_URL = os.getenv('GEOCODING_REVERSE_URL', 'https://photon.komoot.io/reverse')
+GEOCODING_FORWARD_URL = os.getenv('GEOCODING_FORWARD_URL', 'https://photon.komoot.io/api')
 ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 INSTALLED_APPS = [
     "django.contrib.admin", "django.contrib.auth", "django.contrib.contenttypes",
@@ -51,14 +61,30 @@ USE_I18N = True
 USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 CORS_ALLOWED_ORIGINS = os.getenv("FRONTEND_ORIGINS", "http://localhost:50000").split(",")
 CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
+if os.getenv("TRUST_PROXY_HEADERS", "false").lower() == "true":
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 CSRF_FAILURE_VIEW = "garage.auth_pages.csrf_failure"
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 LOGIN_URL = "/accounts/login/"
+LOGIN_REDIRECT_URL = os.getenv("FRONTEND_LOGIN_URL", CORS_ALLOWED_ORIGINS[0].rstrip('/') + '/login')
 SITE_URL = os.getenv("OIDC_SITE_URL", "http://localhost:8000")
+EMAIL_BACKEND = os.getenv('DJANGO_EMAIL_BACKEND',
+    'django.core.mail.backends.console.EmailBackend' if DEBUG else 'django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'localhost')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '25'))
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'false').lower() == 'true'
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'THE_X <noreply@localhost>')
+EMAIL_VERIFICATION_TIMEOUT = int(os.getenv('EMAIL_VERIFICATION_TIMEOUT', '86400'))
+PASSWORD_RESET_TIMEOUT = int(os.getenv('PASSWORD_RESET_TIMEOUT', '3600'))
 OIDC_USERINFO = "garage.auth.userinfo"
 OIDC_GRANT_TYPE_PASSWORD_ENABLE = False
 REST_FRAMEWORK = {

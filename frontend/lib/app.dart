@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'core/api/api_service.dart';
 import 'core/auth/auth_service.dart';
+import 'core/auth/auth_storage.dart';
 import 'features/auth/auth_repository.dart';
 import 'features/auth/auth_view_model.dart';
 import 'features/auth/login_screen.dart';
@@ -17,6 +17,9 @@ import 'features/bookings/presentation/booking_view_model.dart';
 import 'features/shops/data/shop_repository.dart';
 import 'features/shops/presentation/shop_screen.dart';
 import 'features/shops/presentation/shop_view_model.dart';
+import 'features/profile/profile_repository.dart';
+import 'features/profile/profile_view_model.dart';
+import 'features/profile/profile_screen.dart';
 
 class TheXApp extends StatefulWidget {
   const TheXApp({super.key});
@@ -32,14 +35,18 @@ class _TheXAppState extends State<TheXApp> {
   @override
   void initState() {
     super.initState();
-    authService = AuthService(const FlutterSecureStorage());
+    // Keep OIDC credentials and PKCE state in the current browser tab.
+    authService = AuthService.withStorage(createAuthStorage());
     api = ApiService(authService);
     auth = AuthViewModel(AuthRepository(authService, api));
     router = GoRouter(
       refreshListenable: auth,
       redirect: (context, state) {
         if (auth.loading) {
-          return state.matchedLocation == '/loading' ? null : '/loading';
+          if (state.matchedLocation == '/loading') return null;
+          return state.matchedLocation == '/profile'
+              ? '/loading?next=profile'
+              : '/loading';
         }
         if (auth.username == null) {
           return state.matchedLocation == '/login' ? null : '/login';
@@ -49,6 +56,10 @@ class _TheXAppState extends State<TheXApp> {
         }
         if (state.matchedLocation == '/admin') {
           return auth.isMechanic ? '/jobs' : '/garage';
+        }
+        if (state.matchedLocation == '/loading' &&
+            state.uri.queryParameters['next'] == 'profile') {
+          return '/profile';
         }
         if ([
           '/login',
@@ -68,6 +79,13 @@ class _TheXAppState extends State<TheXApp> {
         return null;
       },
       routes: [
+        GoRoute(
+          path: '/profile',
+          builder: (_, _) => ChangeNotifierProvider(
+            create: (_) => ProfileViewModel(ProfileRepository(api))..load(),
+            child: const ProfileScreen(),
+          ),
+        ),
         GoRoute(path: '/admin', builder: (_, _) => const AdminScreen()),
         GoRoute(
           path: '/shops',

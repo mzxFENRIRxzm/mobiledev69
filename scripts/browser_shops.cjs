@@ -78,7 +78,11 @@ async function login(username, password, destination) {
     await jobs.getByRole('button', { name: action, exact: true }).click();
     if (action === 'ปิดงานซ่อม') {
       await jobs.waitForTimeout(350);
-      await jobs.getByRole('textbox', { name: 'รายละเอียดงานซ่อม' }).fill('ตรวจรถเรียบร้อย');
+      const repairNotes = jobs.getByRole('textbox', { name: 'รายละเอียดงานซ่อม' });
+      await repairNotes.click();
+      await repairNotes.pressSequentially('ตรวจรถเรียบร้อย', { delay: 25 });
+      await repairNotes.press('Tab');
+      assert.equal(await repairNotes.inputValue(), 'ตรวจรถเรียบร้อย');
     }
     const response = jobs.waitForResponse(r => r.url().endsWith(`/bookings/${booking.id}/transition/`));
     await jobs.getByRole('button', { name: 'ยืนยัน', exact: true }).click();

@@ -1,0 +1,17 @@
+{% extends 'registration/auth_base.html' %}
+{% block title %}ตรวจสอบอีเมล{% endblock %}
+{% block content %}
+<p class="eyebrow">CHECK YOUR EMAIL</p>
+<h1 id="page-title">ตรวจสอบอีเมล</h1>
+{% if delivery_failed %}
+<p class="subtitle" role="alert">สร้างบัญชีแล้ว แต่ยังส่งอีเมลไม่สำเร็จ กรุณาขอส่งลิงก์อีกครั้ง</p>
+{% else %}
+<p class="subtitle" role="status">หากอีเมลนี้ใช้ยืนยันบัญชีได้ เราได้ส่งลิงก์ให้แล้ว กรุณากดลิงก์ก่อนเข้าสู่ระบบ</p>
+{% endif %}
+{% if debug_verification_url %}
+<p class="security-note">โหมดพัฒนา: ระบบยังไม่ได้ส่งอีเมลจริง สามารถเปิดลิงก์ยืนยันด้านล่างเพื่อทดสอบบัญชีนี้ได้</p>
+<a class="primary" href="{{ debug_verification_url }}">ยืนยันอีเมลสำหรับการทดสอบ</a>
+{% endif %}
+<a class="secondary" href="{% url 'resend-verification' %}">ส่งลิงก์ยืนยันอีกครั้ง</a>
+{% if login_url %}<a class="secondary" href="{{ login_url }}">กลับเข้าสู่ระบบ</a>{% else %}<a class="secondary" href="{% url 'password-reset' %}">กู้รหัสผ่าน</a>{% endif %}
+{% endblock %}

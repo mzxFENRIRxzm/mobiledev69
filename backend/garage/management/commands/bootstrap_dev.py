@@ -39,8 +39,9 @@ class Command(BaseCommand):
         client.name = "THE_X"
         client.client_type = "public"
         client.client_secret = ""
-        client.redirect_uris = ["http://localhost:50000/callback"]
-        client.post_logout_redirect_uris = ["http://localhost:50000/login"]
+        frontend_origins = [origin.rstrip('/') for origin in settings.CORS_ALLOWED_ORIGINS]
+        client.redirect_uris = [f"{origin}/callback" for origin in frontend_origins]
+        client.post_logout_redirect_uris = [f"{origin}/login" for origin in frontend_origins]
         client.scope = ["openid", "profile", "email"]
         client.require_consent = True
         client.save()
