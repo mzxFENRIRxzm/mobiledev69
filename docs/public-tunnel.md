@@ -9,14 +9,18 @@ ngrok version
 ngrok config check
 ```
 
-ปิด `flutter run`, Backend, Preview และ tunnel ตัวเดิมที่ใช้พอร์ต 50000, 8000 หรือ 5050 แล้วรันจาก root โปรเจกต์:
+รันจาก root โปรเจกต์ได้แม้ `flutter run` หรือ Django ของโปรเจกต์อื่นใช้พอร์ต `50000` หรือ `8000` อยู่ สคริปต์จะเลือกพอร์ตภายในที่ว่างให้อัตโนมัติ โดยพอร์ต gateway `5050` ต้องว่าง:
 
 ```powershell
 Set-Location 'D:\Project\Project_Flutter\mobiledev69'
 .\scripts\run_tunnel.ps1
 ```
 
-สคริปต์จะสร้าง Flutter Web ใหม่ด้วย ngrok origin, ตั้ง OIDC client, collect static, เปิด Django ด้วย `DEBUG=false`, Preview, gateway และ ngrok จากนั้นแสดง `THE_X public URL` URL นี้เปิดจากโทรศัพท์หรือเครือข่ายอื่นได้ กด `Ctrl+C` เพื่อหยุดทุก service
+หากพอร์ต `5050` ถูกใช้อยู่ ระบุพอร์ต gateway อื่นได้ เช่น `.\scripts\run_tunnel.ps1 -GatewayPort 5051` สามารถกำหนดพอร์ตตั้งต้นของ Backend และ Preview ด้วย `-BackendPort` และ `-FrontendPort` ได้เช่นกัน สคริปต์จะแสดงพอร์ตที่เลือกก่อนเริ่มทำงาน
+
+หากการปิดหน้าต่าง PowerShell ทิ้ง ngrok ของ tunnel เดิมไว้ และไม่มี gateway ฟังอยู่ที่พอร์ตนั้น สคริปต์จะปิด ngrok ตัวเก่าก่อนเริ่มใหม่
+
+สคริปต์จะสร้าง Flutter Web ใหม่ด้วย ngrok origin, ตั้ง OIDC client, collect static, เปิด Django ด้วย `DEBUG=false`, Preview, gateway และ ngrok จากนั้นแสดง `THE_X public URL` URL นี้เปิดจากโทรศัพท์หรือเครือข่ายอื่นได้ กด `Ctrl+C` เพื่อหยุดชุดทดสอบ
 
 Django Admin `/admin/` ถูกปิดจาก public tunnel เป็นค่าเริ่มต้น แต่หน้า Flutter `/admin` ยังทำงาน หากต้องทดสอบ Django Admin ชั่วคราวและบัญชีมีรหัสผ่านที่แข็งแรง:
 
