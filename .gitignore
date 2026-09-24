@@ -1,6 +1,8 @@
 .env
 .env.*
 !.env.example
+!deploy/.env.local.example
+!deploy/.env.production.example
 .venv/
 __pycache__/
 *.py[cod]

@@ -1,0 +1,16 @@
+.git
+.env
+**/.env
+**/.venv
+**/__pycache__
+**/*.pyc
+.local
+node_modules
+docs
+frontend/.dart_tool
+frontend/build
+frontend/.flutter-plugins-dependencies
+backend/staticfiles
+backend/media
+backend/garage/test_*.py
+scripts

@@ -46,7 +46,9 @@ TEMPLATES = [{
     ]},
 }]
 WSGI_APPLICATION = "the_x.wsgi.application"
-DATABASES = {"default": dj_database_url.parse(os.environ["DATABASE_URL"], conn_max_age=0)}
+DATABASES = {"default": dj_database_url.parse(
+    os.environ["DATABASE_URL"], conn_max_age=int(os.getenv("DB_CONN_MAX_AGE", "0"))
+)}
 if DATABASES["default"]["ENGINE"] == "django.db.backends.postgresql":
     DATABASES["default"]["OPTIONS"] = {"connect_timeout": 8}
 AUTH_PASSWORD_VALIDATORS = [
@@ -59,7 +61,7 @@ LANGUAGE_CODE = "th"
 TIME_ZONE = "Asia/Bangkok"
 USE_I18N = True
 USE_TZ = True
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -67,11 +69,19 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 CORS_ALLOWED_ORIGINS = os.getenv("FRONTEND_ORIGINS", "http://localhost:50000").split(",")
 CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
+if redis_url := os.getenv("REDIS_URL"):
+    CACHES = {"default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": redis_url,
+    }}
 if os.getenv("TRUST_PROXY_HEADERS", "false").lower() == "true":
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 CSRF_FAILURE_VIEW = "garage.auth_pages.csrf_failure"
-SESSION_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SECURE = not DEBUG
+COOKIE_SECURE = os.getenv("DJANGO_COOKIE_SECURE", str(not DEBUG)).lower() == "true"
+SESSION_COOKIE_SECURE = COOKIE_SECURE
+CSRF_COOKIE_SECURE = COOKIE_SECURE
+SECURE_SSL_REDIRECT = os.getenv("DJANGO_SECURE_SSL_REDIRECT", "false").lower() == "true"
+SECURE_HSTS_SECONDS = int(os.getenv("DJANGO_HSTS_SECONDS", "0"))
 LOGIN_URL = "/accounts/login/"
 LOGIN_REDIRECT_URL = os.getenv("FRONTEND_LOGIN_URL", CORS_ALLOWED_ORIGINS[0].rstrip('/') + '/login')
 SITE_URL = os.getenv("OIDC_SITE_URL", "http://localhost:8000")

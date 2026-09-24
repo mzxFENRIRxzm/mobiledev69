@@ -2,9 +2,9 @@ import os
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
-from django.core.management import BaseCommand, CommandError, call_command
-from oidc_provider.models import Client, ResponseType, RSAKey
+from django.core.management import BaseCommand, CommandError
 from garage.models import Shop
+from garage.oidc_client import configure_public_client
 
 
 class Command(BaseCommand):
@@ -35,18 +35,5 @@ class Command(BaseCommand):
             self.stdout.write("Ready: mechanic01 (existing password unchanged).")
         else:
             self.stdout.write("Set MECHANIC_DEMO_PASSWORD in backend/.env to create mechanic01.")
-        client, _ = Client.objects.get_or_create(client_id="the-x-web")
-        client.name = "THE_X"
-        client.client_type = "public"
-        client.client_secret = ""
-        frontend_origins = [origin.rstrip('/') for origin in settings.CORS_ALLOWED_ORIGINS]
-        client.redirect_uris = [f"{origin}/callback" for origin in frontend_origins]
-        client.post_logout_redirect_uris = [f"{origin}/login" for origin in frontend_origins]
-        client.scope = ["openid", "profile", "email"]
-        client.require_consent = True
-        client.save()
-        response, _ = ResponseType.objects.get_or_create(value="code", defaults={"description": "Authorization Code"})
-        client.response_types.set([response])
-        if not RSAKey.objects.exists():
-            call_command("creatersakey", verbosity=0)
+        configure_public_client()
         self.stdout.write(self.style.SUCCESS("Ready: student01 and THE_X public OIDC client. Existing password unchanged."))

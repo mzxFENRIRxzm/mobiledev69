@@ -8,6 +8,7 @@
 
 ต้องการให้โทรศัพท์หรือคอมพิวเตอร์เครื่องอื่นในเครือข่ายเดียวกันทดลองใช้ ให้ทำตาม [คู่มือเปิด THE_X ผ่าน LAN](docs/lan-access.md)
 หากอยู่นอกเครือข่ายเดียวกัน ใช้ [คู่มือ public HTTPS tunnel ด้วย ngrok](docs/public-tunnel.md)
+หากต้องการรันทั้งระบบใน Docker Compose ใช้ [คู่มือ Docker deployment](docs/docker-deployment.md) ซึ่งแยก volume จากฐานข้อมูลพัฒนาเดิม
 
 ## Features — ขอบเขตแรก
 

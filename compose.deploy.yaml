@@ -1,0 +1,128 @@
+name: the_x_deploy
+
+x-backend-build: &backend-build
+  context: .
+  dockerfile: deploy/backend.Dockerfile
+
+x-backend-environment: &backend-environment
+  APP_ORIGIN: ${APP_ORIGIN:?Set APP_ORIGIN in deploy/.env}
+  APP_HOST: ${APP_HOST:?Set APP_HOST in deploy/.env}
+  HTTP_BIND: ${HTTP_BIND:?Set HTTP_BIND in deploy/.env}
+  DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY in deploy/.env}
+  DJANGO_DEBUG: "false"
+  DJANGO_ALLOWED_HOSTS: ${APP_HOST},localhost,127.0.0.1,backend
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in deploy/.env}
+  DATABASE_URL: postgresql://the_x:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in deploy/.env}@postgres:5432/the_x
+  DB_CONN_MAX_AGE: "60"
+  REDIS_URL: redis://redis:6379/0
+  FRONTEND_ORIGINS: ${APP_ORIGIN}
+  FRONTEND_LOGIN_URL: ${APP_ORIGIN}/login
+  OIDC_SITE_URL: ${APP_ORIGIN}
+  TRUST_PROXY_HEADERS: "true"
+  DJANGO_COOKIE_SECURE: ${DJANGO_COOKIE_SECURE:-true}
+  DJANGO_SECURE_SSL_REDIRECT: ${DJANGO_SECURE_SSL_REDIRECT:-true}
+  DJANGO_HSTS_SECONDS: ${DJANGO_HSTS_SECONDS:-3600}
+  PUBLIC_SIGNUP_ENABLED: ${PUBLIC_SIGNUP_ENABLED:-false}
+  DEMO_EMAIL_VERIFICATION_LINK: ${DEMO_EMAIL_VERIFICATION_LINK:-false}
+  DJANGO_EMAIL_BACKEND: ${DJANGO_EMAIL_BACKEND:-django.core.mail.backends.smtp.EmailBackend}
+  EMAIL_HOST: ${EMAIL_HOST:-localhost}
+  EMAIL_PORT: ${EMAIL_PORT:-25}
+  EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+  EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+  EMAIL_USE_TLS: ${EMAIL_USE_TLS:-false}
+  DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-noreply@localhost}
+
+services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: the_x
+      POSTGRES_USER: the_x
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in deploy/.env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U the_x -d the_x"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  init:
+    image: the-x-backend:local
+    build: *backend-build
+    environment: *backend-environment
+    volumes:
+      - static_data:/app/staticfiles
+      - media_data:/app/media
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      sh -ec "python manage.py check_deploy_config &&
+              python manage.py migrate --noinput &&
+              python manage.py collectstatic --noinput --verbosity 0 &&
+              python manage.py configure_oidc_client"
+
+  backend:
+    image: the-x-backend:local
+    build: *backend-build
+    restart: unless-stopped
+    environment: *backend-environment
+    volumes:
+      - static_data:/app/staticfiles
+      - media_data:/app/media
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import os,urllib.request; h={'Host':os.environ['APP_HOST'],'X-Forwarded-Proto':'https' if os.environ['APP_ORIGIN'].startswith('https:') else 'http'}; urllib.request.urlopen(urllib.request.Request('http://127.0.0.1:8000/openid/.well-known/openid-configuration',headers=h),timeout=3)"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  web:
+    image: the-x-web:local
+    build:
+      context: .
+      dockerfile: deploy/frontend.Dockerfile
+      args:
+        APP_ORIGIN: ${APP_ORIGIN:?Set APP_ORIGIN in deploy/.env}
+    restart: unless-stopped
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?Set SITE_ADDRESS in deploy/.env}
+    ports:
+      - "${HTTP_BIND:?Set HTTP_BIND in deploy/.env}:80"
+      - "${HTTPS_BIND:?Set HTTPS_BIND in deploy/.env}:443"
+    volumes:
+      - static_data:/srv/static:ro
+      - media_data:/srv/media:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  static_data:
+  media_data:
+  caddy_data:
+  caddy_config:
