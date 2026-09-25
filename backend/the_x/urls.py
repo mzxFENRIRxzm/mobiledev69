@@ -2,11 +2,10 @@ from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
 from garage.auth_pages import TheXLoginView
-from django.contrib.auth.views import PasswordResetDoneView, PasswordResetCompleteView
 from garage.email_accounts import (
-    TheXPasswordResetView, TheXPasswordResetConfirmView,
     resend_verification, verify_email,
 )
+from garage.username_reset import username_password_reset
 from garage.registration import register
 from garage.geocoding import reverse_address, forward_address
 from django.urls import include, path
@@ -27,13 +26,7 @@ urlpatterns = [
     path("accounts/register/", register, name="register"),
     path("accounts/verify-email/<str:token>/", verify_email, name="verify-email"),
     path("accounts/resend-verification/", resend_verification, name="resend-verification"),
-    path("accounts/password-reset/", TheXPasswordResetView.as_view(), name="password-reset"),
-    path("accounts/password-reset/done/", PasswordResetDoneView.as_view(
-        template_name='registration/password_reset_done.html'), name="password-reset-done"),
-    path("accounts/password-reset/<uidb64>/<token>/", TheXPasswordResetConfirmView.as_view(),
-         name="password-reset-confirm"),
-    path("accounts/password-reset/complete/", PasswordResetCompleteView.as_view(
-        template_name='registration/password_reset_complete.html'), name="password-reset-complete"),
+    path("accounts/password-reset/", username_password_reset, name="password-reset"),
     path("accounts/shop-address/", reverse_address, name="shop-address"),
     path("accounts/shop-geocode/", forward_address, name="shop-geocode"),
     path("openid/.well-known/openid-configuration", TheXProviderInfoView.as_view()),

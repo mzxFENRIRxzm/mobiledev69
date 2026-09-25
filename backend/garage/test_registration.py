@@ -1,5 +1,4 @@
 import secrets
-import re
 import os
 from unittest.mock import patch
 from urllib.parse import parse_qs, urlparse
@@ -23,36 +22,30 @@ class RegistrationTests(TestCase):
             phone='0812345678', account_type='customer',
             password1=self.password, password2=self.password, next=self.destination)
 
-    @override_settings(DEBUG=True)
     def test_customer_registration_and_login_preserve_oidc_destination(self):
         response = self.client.post('/accounts/register/', {
             **self.data, 'role': 'admin', 'is_superuser': 'true', 'is_staff': 'true', 'groups': ['mechanics'],
         })
-        self.assertEqual(response.status_code, 200)
-        query = parse_qs(urlparse(response.context['login_url']).query)
+        self.assertEqual(response.status_code, 302)
+        query = parse_qs(urlparse(response['Location']).query)
         self.assertEqual(query['next'], [self.destination])
+        self.assertEqual(query['registered'], ['1'])
         user = get_user_model().objects.get(username='new-rider')
         self.assertEqual(user.email, 'rider@example.com')
         self.assertTrue(user.check_password(self.password))
         self.assertFalse(user.is_staff or user.is_superuser or user.groups.exists())
-        self.assertFalse(user.is_active)
-        self.assertEqual(len(mail.outbox), 1)
-        self.assertContains(response, 'ยืนยันอีเมลสำหรับการทดสอบ')
-        self.assertTrue(response.context['debug_verification_url'].startswith('http://testserver/'))
+        self.assertTrue(user.is_active)
+        self.assertFalse(user.profile.awaiting_signup_verification)
+        self.assertEqual(len(mail.outbox), 0)
         self.assertNotIn('_auth_user_id', self.client.session)
         response = self.client.post('/accounts/login/', dict(username=user.username,
             password=self.password, next=self.destination))
-        self.assertEqual(response.status_code, 200)
-        link = re.search(r'https?://\S+', mail.outbox[0].body).group()
-        path = urlparse(link).path
-        self.assertContains(self.client.get(path), 'ยืนยันอีเมล')
-        self.assertContains(self.client.post(path), 'ยืนยันอีเมลแล้ว')
-        user.refresh_from_db()
-        self.assertTrue(user.is_active)
-        self.assertIsNotNone(user.profile.email_verified_at)
-        response = self.client.post('/accounts/login/', dict(username=user.username,
-            password=self.password, next=self.destination))
         self.assertEqual(response['Location'], self.destination)
+
+    def test_email_is_optional_at_signup(self):
+        response = self.client.post('/accounts/register/', {**self.data, 'email': ''})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(get_user_model().objects.get(username='new-rider').email, '')
 
     def test_duplicate_email_case_insensitive_and_username_rejected(self):
         get_user_model().objects.create_user(username='existing', email='RIDER@example.com')
@@ -77,13 +70,11 @@ class RegistrationTests(TestCase):
             response = self.client.get('/accounts/register/', {'next': destination})
             self.assertEqual(response.context['next'], '')
         response = self.client.post('/accounts/register/', {**self.data, 'next': 'https://example.com'})
-        self.assertNotIn('example.com', response.context['login_url'])
+        self.assertNotIn('example.com', response['Location'])
 
     @override_settings(LOGIN_REDIRECT_URL='http://localhost:50000/login')
     def test_direct_signup_login_returns_to_flutter_to_start_oidc(self):
         self.client.post('/accounts/register/', {**self.data, 'next': ''})
-        link = re.search(r'https?://\S+', mail.outbox[0].body).group()
-        self.client.post(urlparse(link).path)
         response = self.client.post('/accounts/login/', dict(username=self.data['username'], password=self.password))
         self.assertEqual(response['Location'], 'http://localhost:50000/login')
 
@@ -95,7 +86,7 @@ class RegistrationTests(TestCase):
         self.assertNotContains(response, 'name="referrer" content="no-referrer"')
         response = client.post('/accounts/register/', {**self.data,
             'csrfmiddlewaretoken': client.cookies['csrftoken'].value})
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 302)
 
     def test_stale_registration_form_reopens_registration_not_login(self):
         client = Client(enforce_csrf_checks=True)
@@ -123,17 +114,16 @@ class RegistrationTests(TestCase):
         self.assertNotContains(self.client.get('/accounts/login/'), 'สมัครสมาชิกใหม่')
 
     @override_settings(DEBUG=False)
-    def test_production_signup_never_exposes_verification_token_in_page(self):
+    def test_production_signup_does_not_send_email(self):
         response = self.client.post('/accounts/register/', self.data)
-        self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, 'ยืนยันอีเมลสำหรับการทดสอบ')
-        self.assertIsNone(response.context['debug_verification_url'])
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(len(mail.outbox), 0)
 
     @override_settings(DEBUG=False, DEMO_EMAIL_VERIFICATION_LINK=True)
-    def test_tunnel_demo_can_verify_without_enabling_debug(self):
+    def test_tunnel_demo_signup_needs_no_email(self):
         response = self.client.post('/accounts/register/', self.data, secure=True)
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue(response.context['debug_verification_url'].startswith('https://testserver/'))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_logged_in_user_can_open_signup_without_redirect_loop_or_session_replacement(self):
         user = get_user_model().objects.create_user(username='existing')
@@ -144,7 +134,7 @@ class RegistrationTests(TestCase):
         self.assertEqual(form.status_code, 200)
         self.assertEqual(form.context['next'], self.destination)
         self.assertContains(form, 'สร้างบัญชี')
-        self.assertEqual(self.client.post('/accounts/register/', self.data).status_code, 200)
+        self.assertEqual(self.client.post('/accounts/register/', self.data).status_code, 302)
         self.assertEqual(self.client.session['_auth_user_id'], str(user.pk))
         new_user = get_user_model().objects.get(username=self.data['username'])
         self.assertFalse(new_user.is_staff or new_user.is_superuser or new_user.groups.exists())

@@ -14,8 +14,6 @@ from rest_framework.test import APIClient
 
 from .models import Shop, UserProfile
 from .registration import CustomerRegistrationForm
-from .email_accounts import verification_token
-from django.urls import reverse
 from .shops import ShopSerializer
 from .uploads import clean_shop_photo
 from django.core.exceptions import ValidationError
@@ -41,25 +39,19 @@ class ProviderRegistrationTests(TestCase):
 
     def test_provider_creates_profile_shop_and_membership_and_normalizes_photo(self):
         response = self.client.post('/accounts/register/', {**self.data, 'shop_photo': self.photo(), 'is_superuser': 'true'})
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 302)
         user = get_user_model().objects.get(username='provider')
         self.assertFalse(user.is_staff or user.is_superuser)
-        self.assertFalse(user.is_active)
+        self.assertTrue(user.is_active)
         self.assertEqual(user.profile.phone, self.data['phone'])
         self.assertTrue(user.groups.filter(name='mechanics').exists())
         shop = user.service_shops.get()
-        self.assertTrue(shop.awaiting_owner_verification)
-        self.assertFalse(shop.accepting_bookings)
-        viewer = APIClient()
-        viewer.force_authenticate(get_user_model().objects.create_user(username='shop-viewer'))
-        self.assertEqual(viewer.get('/api/shops/').data['count'], 0)
-        self.assertEqual(viewer.get(f'/api/shops/{shop.pk}/').status_code, 404)
-        link = reverse('verify-email', args=[verification_token(user, user.email, 'signup')])
-        self.assertTrue(self.client.post(link).context['verified'])
-        shop.refresh_from_db()
         self.assertFalse(shop.awaiting_owner_verification)
         self.assertTrue(shop.accepting_bookings)
+        viewer = APIClient()
+        viewer.force_authenticate(get_user_model().objects.create_user(username='shop-viewer'))
         self.assertEqual(viewer.get('/api/shops/').data['count'], 1)
+        self.assertEqual(viewer.get(f'/api/shops/{shop.pk}/').status_code, 200)
         self.assertEqual(shop.latitude, Decimal('13.756300'))
         self.assertEqual(shop.longitude, Decimal('100.501800'))
         self.assertEqual(shop.phone, self.data['phone'])
@@ -78,7 +70,7 @@ class ProviderRegistrationTests(TestCase):
     def test_customer_does_not_gain_membership_from_posted_shop_or_admin_fields(self):
         response = self.client.post('/accounts/register/', {**self.data, 'account_type': 'customer',
             'is_staff': 'true', 'role': 'admin', 'shop_photo': self.photo()})
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 302)
         user = get_user_model().objects.get()
         self.assertFalse(user.is_staff or user.is_superuser or user.groups.exists())
         self.assertEqual(user.profile.phone, '0812345678')

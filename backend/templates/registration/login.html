@@ -17,8 +17,7 @@
   <button class="primary" type="submit" id="login-submit">เข้าสู่ระบบ</button>
 </form>
 {% if signup_enabled %}<a class="secondary" href="{% url 'register' %}?next={{ next|urlencode }}">สมัครสมาชิกใหม่</a>{% endif %}
-<a class="secondary" href="{% url 'password-reset' %}">ลืมรหัสผ่าน</a>
-<a class="secondary" href="{% url 'resend-verification' %}">ส่งลิงก์ยืนยันอีเมลอีกครั้ง</a>
+{% if local_username_reset_enabled %}<a class="secondary" href="{% url 'password-reset' %}">รีเซ็ตรหัสผ่านด้วยชื่อผู้ใช้ (เฉพาะการทดสอบบนเครื่อง)</a>{% endif %}
 <p class="note">ระบบจะเปิดหน้าที่ตรงกับบทบาทของคุณหลังเข้าสู่ระบบ</p>
 {% endblock %}
 {% block scripts %}

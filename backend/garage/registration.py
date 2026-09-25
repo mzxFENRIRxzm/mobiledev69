@@ -1,5 +1,4 @@
 from urllib.parse import urlencode
-from smtplib import SMTPException
 
 from django import forms
 from django.conf import settings
@@ -8,7 +7,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import Group
 from django.core.validators import RegexValidator
 from django.db import IntegrityError, transaction
-from django.http import Http404
+from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import render
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
@@ -28,7 +27,7 @@ def validate_unique_email(value, exclude_pk=None):
 
 
 class CustomerRegistrationForm(UserCreationForm):
-    email = forms.EmailField(label='อีเมล', max_length=254,
+    email = forms.EmailField(label='อีเมล (ไม่บังคับ)', max_length=254, required=False,
         widget=forms.EmailInput(attrs={'autocomplete': 'email'}))
     phone = forms.CharField(label='เบอร์โทรศัพท์', max_length=20,
         validators=[RegexValidator(r'^\+?[0-9]{9,15}$', 'กรอกเบอร์โทร 9–15 หลัก เช่น 0812345678 หรือ +66812345678')],
@@ -79,20 +78,20 @@ class CustomerRegistrationForm(UserCreationForm):
         user = super().save(commit=False)
         user.is_staff = False
         user.is_superuser = False
-        user.is_active = False  # Activate only after proving control of the email address.
+        user.is_active = True
         shop = None
         try:
             with transaction.atomic():
                 user.save()
                 UserProfile.objects.create(user=user, phone=self.cleaned_data['phone'],
-                                           awaiting_signup_verification=True)
+                                           awaiting_signup_verification=False)
                 if self.cleaned_data['account_type'] == 'mechanic':
                     group, _ = Group.objects.get_or_create(name='mechanics')
                     user.groups.add(group)
                     shop = Shop(name=self.cleaned_data['shop_name'], address=self.cleaned_data['shop_address'],
                         phone=self.cleaned_data['phone'], latitude=self.cleaned_data['latitude'],
                         longitude=self.cleaned_data['longitude'], photo=self.cleaned_data['shop_photo'],
-                        accepting_bookings=False, awaiting_owner_verification=True)
+                        accepting_bookings=True, awaiting_owner_verification=False)
                     shop.save()
                     shop.mechanics.add(user)
         except Exception:
@@ -124,26 +123,14 @@ def register(request):
     form = CustomerRegistrationForm(request.POST if request.method == 'POST' else None, request.FILES or None)
     if request.method == 'POST' and form.is_valid():
         try:
-            user = form.save()
+            form.save()
         except IntegrityError:
             # Database uniqueness is authoritative if two valid forms race.
             form.add_error(None, 'ไม่สามารถใช้ชื่อผู้ใช้หรืออีเมลนี้ได้ กรุณาตรวจสอบและลองใหม่')
         except OSError:
             form.add_error(None, 'บันทึกรูปไม่สำเร็จ กรุณาเลือกรูปและลองใหม่')
         else:
-            from .email_accounts import send_verification_email
-            try:
-                verification_url = send_verification_email(request, user)
-                delivery_failed = False
-            except (OSError, SMTPException, UnicodeError):
-                verification_url = None
-                delivery_failed = True
-            return render(request, 'registration/verification_sent.html', {
-                'login_url': login_url, 'delivery_failed': delivery_failed,
-                'debug_verification_url': verification_url if (
-                    settings.DEBUG or settings.DEMO_EMAIL_VERIFICATION_LINK
-                ) else None,
-            })
+            return HttpResponseRedirect(login_url + '&registered=1')
     response = render(request, 'registration/register.html', {
         'form': form, 'next': destination, 'login_url': login_url,
         'account_fields': [form[name] for name in ('username', 'email', 'phone', 'account_type', 'password1', 'password2')],

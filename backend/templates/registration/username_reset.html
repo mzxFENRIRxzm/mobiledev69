@@ -1,0 +1,18 @@
+{% extends 'registration/auth_base.html' %}
+{% block title %}รีเซ็ตรหัสผ่านสำหรับการทดสอบ{% endblock %}
+{% block content %}
+<p class="eyebrow">LOCAL DEMO ONLY</p>
+<h1 id="page-title">รีเซ็ตรหัสผ่าน</h1>
+<p class="subtitle">กรอกชื่อผู้ใช้และรหัสผ่านใหม่สำหรับบัญชี Customer หรือ Mechanic</p>
+{% if form.non_field_errors %}<div class="error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+<form method="post">
+  {% csrf_token %}
+  {% for field in form %}
+    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {{ field }}{{ field.errors }}
+  {% endfor %}
+  <button class="primary" type="submit">ตั้งรหัสผ่านใหม่</button>
+</form>
+<p class="security-note">โหมดนี้ใช้ได้เฉพาะ localhost เพื่อทดสอบ ผู้ที่รู้ชื่อผู้ใช้สามารถเปลี่ยนรหัสผ่านได้ บัญชี Admin ต้องให้ผู้ดูแลเปลี่ยนผ่าน Django Admin</p>
+<a class="secondary" href="/accounts/login/">กลับเข้าสู่ระบบ</a>
+{% endblock %}

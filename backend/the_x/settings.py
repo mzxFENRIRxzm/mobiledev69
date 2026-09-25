@@ -16,6 +16,7 @@ PUBLIC_SIGNUP_ENABLED = os.getenv("PUBLIC_SIGNUP_ENABLED", str(DEBUG)).lower() =
 DEMO_EMAIL_VERIFICATION_LINK = os.getenv(
     "DEMO_EMAIL_VERIFICATION_LINK", "false"
 ).lower() == "true"
+LOCAL_USERNAME_RESET_ENABLED = os.getenv("LOCAL_USERNAME_RESET_ENABLED", "false").lower() == "true"
 GEOCODING_REVERSE_URL = os.getenv('GEOCODING_REVERSE_URL', 'https://photon.komoot.io/reverse')
 GEOCODING_FORWARD_URL = os.getenv('GEOCODING_FORWARD_URL', 'https://photon.komoot.io/api')
 ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
@@ -94,7 +95,6 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'false').lower() == 'true'
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'THE_X <noreply@localhost>')
 EMAIL_VERIFICATION_TIMEOUT = int(os.getenv('EMAIL_VERIFICATION_TIMEOUT', '86400'))
-PASSWORD_RESET_TIMEOUT = int(os.getenv('PASSWORD_RESET_TIMEOUT', '3600'))
 OIDC_USERINFO = "garage.auth.userinfo"
 OIDC_GRANT_TYPE_PASSWORD_ENABLE = False
 REST_FRAMEWORK = {

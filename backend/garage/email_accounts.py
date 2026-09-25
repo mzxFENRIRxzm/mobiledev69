@@ -5,22 +5,18 @@ from smtplib import SMTPException
 
 from django import forms
 from django.conf import settings
-from django.contrib.auth import get_user_model, password_validation
-from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm
-from django.contrib.auth.views import PasswordResetConfirmView, PasswordResetView
+from django.contrib.auth import get_user_model
 from django.core import signing
 from django.core.cache import cache
 from django.core.mail import send_mail
 from django.db import IntegrityError, transaction
-from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.template.loader import render_to_string
-from django.urls import reverse, reverse_lazy
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.crypto import salted_hmac
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods
-from oidc_provider.models import Token
 
 from .models import Shop, UserProfile
 
@@ -89,39 +85,6 @@ class VerificationRequestForm(forms.Form):
                              widget=forms.EmailInput(attrs={'autocomplete': 'email'}))
 
 
-class TheXPasswordResetForm(PasswordResetForm):
-    email = forms.EmailField(
-        label='อีเมล',
-        max_length=254,
-        widget=forms.EmailInput(attrs={
-            'autocomplete': 'email',
-            'autofocus': True,
-            'placeholder': 'example@email.com',
-        }),
-    )
-
-
-class TheXSetPasswordForm(SetPasswordForm):
-    new_password1 = forms.CharField(
-        label='รหัสผ่านใหม่',
-        strip=False,
-        help_text=password_validation.password_validators_help_text_html(),
-        widget=forms.PasswordInput(attrs={
-            'autocomplete': 'new-password',
-            'autofocus': True,
-            'placeholder': 'รหัสผ่านใหม่',
-        }),
-    )
-    new_password2 = forms.CharField(
-        label='ยืนยันรหัสผ่านใหม่',
-        strip=False,
-        widget=forms.PasswordInput(attrs={
-            'autocomplete': 'new-password',
-            'placeholder': 'ยืนยันรหัสผ่านใหม่',
-        }),
-    )
-
-
 @never_cache
 @require_http_methods(['GET', 'POST'])
 def resend_verification(request):
@@ -187,45 +150,3 @@ def verify_email(request, token):
         return render(request, 'registration/verification_result.html', result_context)
     return render(request, 'registration/verification_result.html',
                   {'verified': True, 'frontend_login_url': settings.LOGIN_REDIRECT_URL})
-
-
-class TheXPasswordResetView(PasswordResetView):
-    form_class = TheXPasswordResetForm
-    template_name = 'registration/password_reset_form.html'
-    email_template_name = 'registration/password_reset_email.txt'
-    subject_template_name = 'registration/password_reset_subject.txt'
-    success_url = reverse_lazy('password-reset-done')
-
-    def form_valid(self, form):
-        address = form.cleaned_data['email'].strip().lower()
-        key = 'the-x-password-reset-' + hashlib.sha256(address.encode()).hexdigest()
-        if not cache.add(key, True, timeout=60):
-            return HttpResponseRedirect(self.get_success_url())
-        return super().form_valid(form)
-
-
-class TheXPasswordResetConfirmView(PasswordResetConfirmView):
-    form_class = TheXSetPasswordForm
-    template_name = 'registration/password_reset_confirm.html'
-    success_url = reverse_lazy('password-reset-complete')
-
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        # Django invalidates its own sessions on password change. OIDC bearer
-        # tokens are separate records and must be revoked explicitly.
-        Token.objects.filter(user=self.user).delete()
-        try:
-            send_mail(
-                'รหัสผ่าน THE_X ถูกเปลี่ยนแล้ว',
-                render_to_string('registration/password_changed_email.txt', {
-                    'username': self.user.username,
-                }),
-                settings.DEFAULT_FROM_EMAIL,
-                [self.user.email],
-                fail_silently=False,
-            )
-        except (OSError, SMTPException, UnicodeError):
-            # The password is already changed. A notification failure must not
-            # make the user repeat a successful reset with an invalid token.
-            logger.exception('Could not send password changed notification')
-        return response

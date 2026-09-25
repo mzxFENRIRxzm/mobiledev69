@@ -13,7 +13,7 @@ from .email_accounts import send_verification_email
 class ProfileUpdateSerializer(serializers.Serializer):
     first_name = serializers.CharField(max_length=150, allow_blank=True)
     last_name = serializers.CharField(max_length=150, allow_blank=True)
-    email = serializers.EmailField(max_length=254)
+    email = serializers.EmailField(max_length=254, allow_blank=True)
     phone = serializers.RegexField(r'^\+?[0-9]{9,15}$', max_length=20,
         error_messages={'invalid': 'กรอกเบอร์โทร 9–15 หลัก เช่น 0812345678 หรือ +66812345678'})
 
@@ -26,6 +26,8 @@ class ProfileUpdateSerializer(serializers.Serializer):
 
     def validate_email(self, value):
         value = value.lower()
+        if not value:
+            return value
         if get_user_model().objects.filter(email__iexact=value).exclude(pk=self.context['user'].pk).exists():
             raise serializers.ValidationError('ไม่สามารถใช้อีเมลนี้ได้ กรุณาใช้อีเมลอื่น')
         if UserProfile.objects.filter(pending_email__iexact=value).exclude(user=self.context['user']).exists():
@@ -67,6 +69,11 @@ def my_profile(request):
                         profile.phone = phone
                         changes.append('phone')
                     if requested_email is not None:
+                        if not requested_email and user.email:
+                            user.email = ''
+                            user.save(update_fields=['email'])
+                            profile.email_verified_at = None
+                            changes.append('email_verified_at')
                         pending = requested_email if requested_email != user.email else ''
                         if profile.pending_email != pending:
                             profile.pending_email = pending

@@ -20,7 +20,7 @@ docker compose --env-file deploy/.env -f compose.deploy.yaml up -d --build --wai
 docker compose --env-file deploy/.env -f compose.deploy.yaml ps
 ```
 
-`init_docker.py` สร้าง `deploy/.env` พร้อม secret แบบสุ่ม และไม่เขียนทับไฟล์เดิม เปิด `http://localhost:18080/` ได้ทันทีหลังบริการ healthy โหมดนี้ bind เฉพาะ `127.0.0.1` และแสดงลิงก์ยืนยันอีเมลบนหน้าจอเพื่อทดสอบ จึงไม่ได้พิสูจน์ความเป็นเจ้าของอีเมล
+`init_docker.py` สร้าง `deploy/.env` พร้อม secret แบบสุ่ม และไม่เขียนทับไฟล์เดิม เปิด `http://localhost:18080/` ได้ทันทีหลังบริการ healthy โหมดนี้ bind เฉพาะ `127.0.0.1` การสมัครไม่บังคับอีเมลและเข้าใช้ได้ทันที ตั้ง `LOCAL_USERNAME_RESET_ENABLED=true` เพื่อเปิดหน้า `/accounts/password-reset/` สำหรับทดสอบบนเครื่องเท่านั้น ห้ามเปิดโหมดนี้จากภายนอกเพราะผู้ที่รู้ username สามารถเปลี่ยนรหัสบัญชี Customer/Mechanic ได้
 
 สร้างผู้ดูแลระบบในฐานข้อมูล Docker:
 
@@ -43,7 +43,7 @@ python -c "import secrets; print(secrets.token_urlsafe(48))"
 
 คัดลอก `deploy/.env.production.example` เป็น `deploy/.env` บนเซิร์ฟเวอร์ใหม่ แล้วแก้ `APP_ORIGIN`, `APP_HOST`, `SITE_ADDRESS` ให้ตรงกับโดเมน HTTPS เดียวกัน สร้าง `POSTGRES_PASSWORD` และ `DJANGO_SECRET_KEY` แบบสุ่ม ห้ามใช้ placeholder ในไฟล์ตัวอย่าง ตั้ง DNS ให้ชี้เข้าเซิร์ฟเวอร์ และเปิด TCP 80/443 ให้ Caddy ออกและต่ออายุใบรับรองได้ Caddy เก็บข้อมูลใบรับรองไว้ใน volume `caddy_data` ตาม [เอกสาร Automatic HTTPS](https://caddyserver.com/docs/automatic-https)
 
-`PUBLIC_SIGNUP_ENABLED=false` เป็นค่าเริ่มต้นของไฟล์ production ผู้ใช้เดิมและ Admin ยังล็อกอินได้ หากต้องการเปิดสมัครสมาชิกและกู้รหัสผ่าน ให้ตั้ง SMTP จริง (`EMAIL_HOST`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `DEFAULT_FROM_EMAIL`) แล้วเปลี่ยน `PUBLIC_SIGNUP_ENABLED=true` ตัวตรวจ deployment จะปฏิเสธการเปิดสมัครสมาชิก public โดยไม่มี SMTP และปฏิเสธ `DEMO_EMAIL_VERIFICATION_LINK=true` บนโดเมนจริง
+`PUBLIC_SIGNUP_ENABLED=false` เป็นค่าเริ่มต้นของไฟล์ production ผู้ใช้เดิมและ Admin ยังล็อกอินได้ หากต้องการเปิดสมัครสมาชิกสาธารณะ ให้กำหนดมาตรการป้องกันการสมัครปลอม/สแปมก่อน การเปลี่ยนอีเมลในโปรไฟล์ยังต้องใช้ SMTP จริง โหมดรีเซ็ตด้วย username ถูกปฏิเสธบนโดเมนจริง; ให้ Admin ยืนยันตัวผู้ขอและเปลี่ยนรหัสผ่านผ่าน Django Admin ตัวตรวจ deployment ยังปฏิเสธ `DEMO_EMAIL_VERIFICATION_LINK=true` บนโดเมนจริง
 
 ```powershell
 docker compose --env-file deploy/.env -f compose.deploy.yaml config --quiet

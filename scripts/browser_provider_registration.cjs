@@ -100,23 +100,10 @@ async function toggles(page, expected) {
   await page.locator('#shop-photo-preview').waitFor();
   const registration = page.waitForResponse(r => r.url().includes('/accounts/register/') && r.request().method() === 'POST');
   await page.getByRole('button', { name: 'สร้างบัญชีผู้ให้บริการ' }).click();
-  assert.equal((await registration).status(), 200);
-  await page.getByRole('heading', { name: 'ตรวจสอบอีเมล' }).waitFor();
-  const verifyPath = django(`
-from django.conf import settings
-from django.contrib.auth import get_user_model
-from django.urls import reverse
-from garage.email_accounts import verification_token
-assert settings.DEBUG
-user = get_user_model().objects.get(username=${JSON.stringify(prefix)})
-assert not user.is_active
-print(reverse('verify-email', args=[verification_token(user, user.email, 'signup')]))
-`).trim();
-  await page.goto('http://localhost:8000' + verifyPath);
-  await page.getByRole('button', { name: 'ยืนยันอีเมล' }).click();
-  await page.getByRole('heading', { name: 'ยืนยันอีเมลแล้ว' }).waitFor();
+  assert.equal((await registration).status(), 302);
+  await page.waitForURL('**/accounts/login/**');
   stage = 'provider login and consent';
-  await page.goto('http://localhost:8000/accounts/login/?' + new URLSearchParams({ next: destination }));
+  assert.equal(await page.locator('[name=next]').inputValue(), destination);
   await page.locator('[name=username]').fill(prefix);
   await page.locator('[name=password]').fill(password);
   await page.getByRole('button', { name: 'เข้าสู่ระบบ', exact: true }).click();

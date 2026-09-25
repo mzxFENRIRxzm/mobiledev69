@@ -6,6 +6,7 @@ from django.shortcuts import render
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
 from urllib.parse import urlencode
+from garage.username_reset import local_reset_available
 
 
 class TheXAuthenticationForm(AuthenticationForm):
@@ -27,7 +28,9 @@ class TheXLoginView(LoginView):
     redirect_authenticated_user = False
 
     def get_context_data(self, **kwargs):
-        return super().get_context_data(signup_enabled=settings.PUBLIC_SIGNUP_ENABLED, **kwargs)
+        return super().get_context_data(
+            signup_enabled=settings.PUBLIC_SIGNUP_ENABLED,
+            local_username_reset_enabled=local_reset_available(self.request), **kwargs)
 
 
 @never_cache

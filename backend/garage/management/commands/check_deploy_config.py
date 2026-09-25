@@ -43,10 +43,7 @@ class Command(BaseCommand):
 
         if settings.DEMO_EMAIL_VERIFICATION_LINK and not local_http:
             raise CommandError("Demo email verification links are allowed only for the loopback demo.")
-        if settings.PUBLIC_SIGNUP_ENABLED and not settings.DEMO_EMAIL_VERIFICATION_LINK:
-            if (settings.EMAIL_BACKEND != "django.core.mail.backends.smtp.EmailBackend"
-                    or settings.EMAIL_HOST in {"", "localhost"}
-                    or not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD):
-                raise CommandError("Public signup requires configured SMTP credentials.")
+        if settings.LOCAL_USERNAME_RESET_ENABLED and not local_http:
+            raise CommandError("Username-only reset is allowed only for the loopback demo.")
 
         self.stdout.write(self.style.SUCCESS(f"Docker settings valid for {origin}"))

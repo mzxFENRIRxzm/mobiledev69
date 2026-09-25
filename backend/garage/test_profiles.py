@@ -51,12 +51,21 @@ class ProfileTests(TestCase):
         self.assertEqual(self.client.patch(f'/api/profile/{self.mechanic.pk}/', {}, format='json').status_code, 404)
 
     def test_validation_and_duplicate_email_do_not_save_other_fields(self):
-        for values in [{'email': 'MECHANIC@example.com'}, {'email': 'invalid'}, {'email': ''},
+        for values in [{'email': 'MECHANIC@example.com'}, {'email': 'invalid'},
                        {'phone': '123'}, {'phone': '12345x789'}, {'phone': None}, {'first_name': 'x' * 151}]:
             response = self.client.patch('/api/profile/', {**values, 'last_name': 'Changed'}, format='json')
             self.assertEqual(response.status_code, 400)
             self.customer.refresh_from_db()
             self.assertEqual(self.customer.last_name, '')
+
+    def test_email_can_be_left_empty_without_blocking_profile_save(self):
+        response = self.client.patch('/api/profile/', {
+            'email': '', 'last_name': 'Changed', 'phone': '0812345678'}, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.customer.refresh_from_db()
+        self.assertEqual(self.customer.email, '')
+        self.assertEqual(self.customer.last_name, 'Changed')
+        self.assertEqual(self.customer.profile.pending_email, '')
 
     def test_email_race_cannot_replace_primary_address_before_verification(self):
         with patch('garage.profiles.ProfileUpdateSerializer.validate_email', return_value=self.mechanic.email):

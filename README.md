@@ -4,7 +4,7 @@
 
 สถานะการส่งมอบและหลักฐานทดสอบ: [ขอบเขตแรก](docs/phase-1-status.md), [ขอบเขตสอง](docs/phase-2-testing.md), [ขอบเขตสาม — ระบบร้าน](docs/phase-3-testing.md), [ขอบเขตสี่ — บัญชีและโปรไฟล์](docs/phase-4-testing.md)
 
-ปิดขอบเขตสี่สำหรับ Flutter Web แล้ว: [สมัครสมาชิกทั่วไป/ผู้ให้บริการ พร้อมเบอร์โทร รูปร้าน และหมุดแผนที่](docs/phase-4-registration.md), ปุ่มแสดงรหัสผ่านทุกหน้า, [โปรไฟล์ลูกค้า/ช่าง](docs/phase-4-profile.md), [ยืนยันอีเมล/กู้รหัสผ่าน](docs/phase-4-email-accounts.md) และ session OIDC แยกแท็บ ผ่าน regression ทั้ง local และ public HTTPS tunnel เมื่อ 23 กันยายน 2026
+ปิดขอบเขตสี่สำหรับ Flutter Web แล้ว: [สมัครสมาชิกทั่วไป/ผู้ให้บริการ พร้อมเบอร์โทร รูปร้าน และหมุดแผนที่](docs/phase-4-registration.md), ปุ่มแสดงรหัสผ่านทุกหน้า, [โปรไฟล์ลูกค้า/ช่าง](docs/phase-4-profile.md) และ session OIDC แยกแท็บ การสมัครปัจจุบันไม่บังคับอีเมลและเข้าใช้ได้ทันที ส่วนการรีเซ็ตด้วย username เปิดเฉพาะ Docker demo บน localhost; [บันทึกการเปลี่ยน flow บัญชี](docs/phase-4-email-accounts.md)
 
 ต้องการให้โทรศัพท์หรือคอมพิวเตอร์เครื่องอื่นในเครือข่ายเดียวกันทดลองใช้ ให้ทำตาม [คู่มือเปิด THE_X ผ่าน LAN](docs/lan-access.md)
 หากอยู่นอกเครือข่ายเดียวกัน ใช้ [คู่มือ public HTTPS tunnel ด้วย ngrok](docs/public-tunnel.md)
@@ -41,7 +41,7 @@
 ## Features — ขอบเขตสี่
 
 - สมัคร Customer หรือ Mechanic; ผู้ให้บริการต้องระบุข้อมูลร้าน รูป ที่อยู่ และหมุดแผนที่
-- ยืนยันอีเมลก่อนเข้าใช้ ส่งลิงก์ใหม่ และกู้รหัสผ่านด้วย token ใช้ครั้งเดียว
+- สมัครแล้วเข้าใช้ได้ทันทีโดยไม่บังคับอีเมล; รีเซ็ตรหัสด้วย username เฉพาะ Docker demo บน localhost โดยไม่อนุญาตบัญชี Admin
 - Customer และ Mechanic แก้ข้อมูลส่วนตัวของตน โดยการเปลี่ยนอีเมลต้องยืนยันก่อน
 - เก็บ OIDC token/PKCE ใน `sessionStorage`: reload แท็บเดิมยังอยู่ แต่แท็บใหม่เริ่ม Login และใช้หลายบัญชีพร้อมกันได้
 - เปิดผ่าน LAN สำหรับเครือข่ายทดสอบ หรือ ngrok HTTPS URL เดียวสำหรับ Flutter, API และ OIDC

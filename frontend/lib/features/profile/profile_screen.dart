@@ -196,9 +196,9 @@ class _ProfileFormState extends State<ProfileForm> {
           keyboardType: TextInputType.emailAddress,
           autofillHints: const [AutofillHints.email],
           textInputAction: TextInputAction.next,
-          decoration: const InputDecoration(labelText: 'อีเมล'),
+          decoration: const InputDecoration(labelText: 'อีเมล (ไม่บังคับ)'),
           validator: (value) =>
-              RegExp(
+              (value?.trim().isEmpty ?? true) || RegExp(
                 r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
               ).hasMatch(value?.trim() ?? '')
               ? null

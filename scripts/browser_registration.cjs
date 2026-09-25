@@ -1,4 +1,4 @@
-// Local acceptance: Flutter -> OIDC -> registration -> email verification -> login.
+// Local acceptance: Flutter -> OIDC -> immediate registration -> login.
 const { chromium } = require('playwright');
 const { randomBytes } = require('node:crypto');
 const { execFileSync } = require('node:child_process');
@@ -47,35 +47,11 @@ async function semantics(page) {
   await page.locator('[name=password2]').fill(password);
   const response = page.waitForResponse(r => r.url().includes('/accounts/register/') && r.request().method() === 'POST');
   await page.getByRole('button', { name: 'สร้างบัญชีสมาชิกทั่วไป' }).click();
-  assert.equal((await response).status(), 200);
+  assert.equal((await response).status(), 302);
   registered = true;
-  await page.getByRole('heading', { name: 'ตรวจสอบอีเมล' }).waitFor();
-  stage = 'verify customer email';
-  const debugVerification = page.getByRole('link', { name: 'ยืนยันอีเมลสำหรับการทดสอบ' });
-  if (await debugVerification.count()) {
-    await debugVerification.click();
-  } else {
-    const verifyPath = execFileSync(path.join(root, 'backend/.venv/Scripts/python.exe'), ['-c', `
-import os
-os.environ.setdefault('DJANGO_SETTINGS_MODULE','the_x.settings')
-import django
-django.setup()
-from django.conf import settings
-from django.contrib.auth import get_user_model
-from django.urls import reverse
-from garage.email_accounts import verification_token
-assert settings.DEBUG
-user = get_user_model().objects.get(username=${JSON.stringify(username)})
-assert not user.is_active
-print(reverse('verify-email', args=[verification_token(user, user.email, 'signup')]))
-`], { cwd: path.join(root, 'backend'), encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
-    await page.goto(backendBase + verifyPath);
-  }
-  await page.getByRole('button', { name: 'ยืนยันอีเมล' }).click();
-  await page.getByRole('heading', { name: 'ยืนยันอีเมลแล้ว' }).waitFor();
-  await page.goto(backendBase + '/accounts/login/?' + new URLSearchParams({ next: destination }));
+  await page.waitForURL('**/accounts/login/**');
   assert.equal(await page.locator('[name=next]').inputValue(), destination);
-  console.log('PASS: customer stays inactive until email verification and retains OIDC destination');
+  console.log('PASS: customer is active immediately and retains OIDC destination');
   stage = 'login and OIDC callback';
   await page.locator('[name=username]').fill(username);
   await page.locator('[name=password]').fill(password);
