@@ -26,7 +26,7 @@ class PreviewTests(unittest.TestCase):
         self.temp.cleanup()
 
     def test_routes_return_latest_content_even_with_conditional_cache_headers(self):
-        for route in ['/garage', '/bookings?shop=1', '/shops', '/profile', '/index.html']:
+        for route in ['/garage', '/bookings?shop=1', '/shops', '/profile', '/messages?shop=1', '/ai-chat', '/index.html']:
             request = Request(self.base + route, headers={'If-Modified-Since': 'Wed, 01 Jan 2031 00:00:00 GMT'})
             with urlopen(request) as response:
                 self.assertEqual(response.status, 200)

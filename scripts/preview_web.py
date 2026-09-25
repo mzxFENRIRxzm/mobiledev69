@@ -33,7 +33,7 @@ class Handler(SimpleHTTPRequestHandler):
         for header in ("If-Modified-Since", "If-None-Match"):
             if header in self.headers:
                 del self.headers[header]
-        if request_path in ("/", "/index.html", "/login", "/callback", "/garage", "/loading", "/bookings", "/jobs", "/shops", "/admin", "/profile"):
+        if request_path in ("/", "/index.html", "/login", "/callback", "/garage", "/loading", "/bookings", "/jobs", "/shops", "/admin", "/profile", "/messages", "/ai-chat"):
             # Also upgrade the last built index without editing build artifacts.
             # Other Dart changes still require flutter build web.
             payload = (web / "index.html").read_text(encoding="utf-8").replace(

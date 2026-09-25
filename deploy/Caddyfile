@@ -17,6 +17,8 @@
 	}
 
 	handle {
+		# SPA paths such as /garage also serve index.html. Revalidate on reload.
+		header Cache-Control "no-cache, max-age=0, must-revalidate"
 		root * /srv/flutter
 		try_files {path} /index.html
 		file_server
