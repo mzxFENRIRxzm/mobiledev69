@@ -8,6 +8,8 @@ AI chat (`/ai-chat`) uses a server-side HTTPS webhook. Set `AI_CHAT_WEBHOOK_URL`
 
 แอปดูแลรถจักรยานยนต์ พัฒนาต่อยอดแนวคิดจาก [THE_ONE](https://github.com/zxSUPHASANxz/THE_ONE_FINAL/tree/f4db01a) เวอร์ชันก่อนเปลี่ยนหน้า chatbot เป็นธีมแดง–ทอง งานรายวิชาอยู่บน branch `project`
 
+รายละเอียดรายงานต้นแบบ THE_ONE ที่ใช้ประกอบการพัฒนา THE_X และจุดต่างจากโค้ดปัจจุบัน: [prototype reference](docs/the-one-prototype-reference.md)
+
 สถานะการส่งมอบและหลักฐานทดสอบ: [ขอบเขตแรก](docs/phase-1-status.md), [ขอบเขตสอง](docs/phase-2-testing.md), [ขอบเขตสาม — ระบบร้าน](docs/phase-3-testing.md), [ขอบเขตสี่ — บัญชีและโปรไฟล์](docs/phase-4-testing.md)
 
 ปิดขอบเขตสี่สำหรับ Flutter Web แล้ว: [สมัครสมาชิกทั่วไป/ผู้ให้บริการ พร้อมเบอร์โทร รูปร้าน และหมุดแผนที่](docs/phase-4-registration.md), ปุ่มแสดงรหัสผ่านทุกหน้า, [โปรไฟล์ลูกค้า/ช่าง](docs/phase-4-profile.md) และ session OIDC แยกแท็บ การสมัครปัจจุบันไม่บังคับอีเมลและเข้าใช้ได้ทันที ส่วนการรีเซ็ตด้วย username เปิดเฉพาะ Docker demo บน localhost; [บันทึกการเปลี่ยน flow บัญชี](docs/phase-4-email-accounts.md)
