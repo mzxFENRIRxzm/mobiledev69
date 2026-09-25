@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/config.dart';
 import '../auth/auth_view_model.dart';
+import '../auth/app_menu.dart';
 import 'profile_repository.dart';
 import 'profile_view_model.dart';
 
@@ -21,6 +22,7 @@ class ProfileScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go(auth.isMechanic ? '/jobs' : '/garage'),
         ),
+        actions: const [AppMenu()],
       ),
       body: Center(
         child: ConstrainedBox(

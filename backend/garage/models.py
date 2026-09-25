@@ -106,3 +106,22 @@ class BookingEvent(models.Model):
 
     class Meta:
         ordering = ["created_at", "pk"]
+
+
+class ShopConversation(models.Model):
+    shop = models.ForeignKey(Shop, on_delete=models.PROTECT, related_name="conversations")
+    customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="shop_conversations")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["shop", "customer"], name="one_conversation_per_shop_customer")]
+
+
+class ShopMessage(models.Model):
+    conversation = models.ForeignKey(ShopConversation, on_delete=models.CASCADE, related_name="messages")
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    body = models.TextField(max_length=2000)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at", "pk"]

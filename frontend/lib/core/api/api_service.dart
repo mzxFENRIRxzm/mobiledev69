@@ -41,6 +41,12 @@ String describeError(Object error) {
     if (error.response?.statusCode == 404) {
       return 'ไม่พบรายการนี้ กรุณาโหลดข้อมูลใหม่';
     }
+    if ([429, 503].contains(error.response?.statusCode)) {
+      final body = error.response?.data;
+      if (body is Map && body['detail'] is String) {
+        return body['detail'] as String;
+      }
+    }
     if ([403, 409].contains(error.response?.statusCode)) {
       return '${error.response?.data['detail'] ?? 'ไม่มีสิทธิ์ดำเนินการ กรุณาโหลดข้อมูลใหม่'}';
     }

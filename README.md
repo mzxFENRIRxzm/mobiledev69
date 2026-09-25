@@ -1,5 +1,11 @@
 # THE_X
 
+## Dashboard, map and chat
+
+Customer dashboard (`/garage`) now shows recent bookings and a map of service shops with saved coordinates. Select a marker to book or start a shop conversation. The message icon and THE_X menu also open customer–shop chat; mechanics see conversations for shops they currently belong to. Messages refresh every eight seconds and are stored in PostgreSQL. Only the customer and current shop mechanics can read or send in that room. The map uses OpenStreetMap tiles with visible attribution and requires an internet connection.
+
+AI chat (`/ai-chat`) uses a server-side HTTPS webhook. Set `AI_CHAT_WEBHOOK_URL` and, if needed, `AI_CHAT_WEBHOOK_TOKEN` in `deploy/.env`, then recreate the backend container. The webhook receives JSON `{"message":"..."}` and must reply with JSON `{"reply":"..."}`. The token is sent as a Bearer header from Django, never from Flutter. With no webhook configured, the screen reports that AI chat is unavailable. Avoid entering personal data or booking details in the prompt; requests are forwarded to the configured webhook. The AI endpoint is limited to 10 requests per user per minute. For a public deployment, use a tile provider suited to the expected traffic and add moderation/retention policy for conversations.
+
 แอปดูแลรถจักรยานยนต์ พัฒนาต่อยอดแนวคิดจาก [THE_ONE](https://github.com/zxSUPHASANxz/THE_ONE_FINAL/tree/f4db01a) เวอร์ชันก่อนเปลี่ยนหน้า chatbot เป็นธีมแดง–ทอง งานรายวิชาอยู่บน branch `project`
 
 สถานะการส่งมอบและหลักฐานทดสอบ: [ขอบเขตแรก](docs/phase-1-status.md), [ขอบเขตสอง](docs/phase-2-testing.md), [ขอบเขตสาม — ระบบร้าน](docs/phase-3-testing.md), [ขอบเขตสี่ — บัญชีและโปรไฟล์](docs/phase-4-testing.md)

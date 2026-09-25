@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../auth/auth_view_model.dart';
+import '../../auth/app_menu.dart';
 import '../domain/motorcycle.dart';
 import 'garage_view_model.dart';
+import 'customer_overview.dart';
 
 class GarageScreen extends StatelessWidget {
   const GarageScreen({super.key});
@@ -19,24 +21,16 @@ class GarageScreen extends StatelessWidget {
         ),
         actions: [
           IconButton(
-            onPressed: () => context.go('/profile'),
-            tooltip: 'โปรไฟล์ของฉัน',
-            icon: const Icon(Icons.person_outline),
-          ),
-          TextButton(
-            onPressed: () => context.go('/shops'),
-            child: const Text('ค้นหาร้าน'),
-          ),
-          TextButton(
-            onPressed: () => context.go('/bookings'),
-            child: const Text('การจองซ่อม'),
+            onPressed: () => context.go('/ai-chat'),
+            tooltip: 'แชต AI',
+            icon: const Icon(Icons.smart_toy_outlined),
           ),
           IconButton(
-            onPressed: auth.logout,
-            tooltip: 'ออกจากระบบทุกอุปกรณ์',
-            icon: const Icon(Icons.logout),
+            onPressed: () => context.go('/messages'),
+            tooltip: 'แชตข้อความ',
+            icon: const Icon(Icons.chat_bubble_outline),
           ),
-          const SizedBox(width: 16),
+          const AppMenu(),
         ],
       ),
       body: Center(
@@ -60,6 +54,7 @@ class GarageScreen extends StatelessWidget {
                 style: const TextStyle(color: Colors.white60),
               ),
               const SizedBox(height: 28),
+              const CustomerOverview(),
               Row(
                 children: [
                   Expanded(

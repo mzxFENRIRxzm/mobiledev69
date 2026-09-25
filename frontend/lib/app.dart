@@ -20,6 +20,7 @@ import 'features/shops/presentation/shop_view_model.dart';
 import 'features/profile/profile_repository.dart';
 import 'features/profile/profile_view_model.dart';
 import 'features/profile/profile_screen.dart';
+import 'features/chat/chat_screen.dart';
 
 class TheXApp extends StatefulWidget {
   const TheXApp({super.key});
@@ -70,7 +71,11 @@ class _TheXAppState extends State<TheXApp> {
           return auth.isMechanic ? '/jobs' : '/garage';
         }
         if (auth.isMechanic &&
-            ['/garage', '/bookings'].contains(state.matchedLocation)) {
+            [
+              '/garage',
+              '/bookings',
+              '/ai-chat',
+            ].contains(state.matchedLocation)) {
           return '/jobs';
         }
         if (!auth.isMechanic && state.matchedLocation == '/jobs') {
@@ -87,6 +92,13 @@ class _TheXAppState extends State<TheXApp> {
           ),
         ),
         GoRoute(path: '/admin', builder: (_, _) => const AdminScreen()),
+        GoRoute(
+          path: '/messages',
+          builder: (_, state) => MessagesScreen(
+            initialShop: int.tryParse(state.uri.queryParameters['shop'] ?? ''),
+          ),
+        ),
+        GoRoute(path: '/ai-chat', builder: (_, _) => const AiChatScreen()),
         GoRoute(
           path: '/shops',
           builder: (_, _) => ChangeNotifierProvider(

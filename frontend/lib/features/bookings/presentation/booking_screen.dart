@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../core/api/api_service.dart';
 import '../../../core/result.dart';
 import '../../auth/auth_view_model.dart';
+import '../../auth/app_menu.dart';
 import '../../garage/data/garage_repository.dart';
 import '../../garage/domain/motorcycle.dart';
 import '../domain/booking.dart';
@@ -23,24 +24,11 @@ class BookingScreen extends StatelessWidget {
         title: Text(auth.isMechanic ? 'งานซ่อมของช่าง' : 'การจองซ่อม'),
         actions: [
           IconButton(
-            onPressed: () => context.go('/profile'),
-            tooltip: 'โปรไฟล์ของฉัน',
-            icon: const Icon(Icons.person_outline),
+            onPressed: () => context.go('/messages'),
+            tooltip: 'แชตข้อความ',
+            icon: const Icon(Icons.chat_bubble_outline),
           ),
-          TextButton(
-            onPressed: () => context.go('/shops'),
-            child: const Text('ร้านบริการ'),
-          ),
-          if (!auth.isMechanic)
-            TextButton(
-              onPressed: () => context.go('/garage'),
-              child: const Text('โรงรถ'),
-            ),
-          IconButton(
-            onPressed: auth.logout,
-            tooltip: 'ออกจากระบบทุกอุปกรณ์',
-            icon: const Icon(Icons.logout),
-          ),
+          const AppMenu(),
         ],
       ),
       body: Center(

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../auth/auth_view_model.dart';
+import '../../auth/app_menu.dart';
 import '../domain/shop.dart';
 import 'shop_view_model.dart';
 
@@ -17,15 +18,11 @@ class ShopScreen extends StatelessWidget {
         title: const Text('ร้านและศูนย์บริการ'),
         actions: [
           IconButton(
-            onPressed: () => context.go('/profile'),
-            tooltip: 'โปรไฟล์ของฉัน',
-            icon: const Icon(Icons.person_outline),
+            onPressed: () => context.go('/messages'),
+            tooltip: 'แชตข้อความ',
+            icon: const Icon(Icons.chat_bubble_outline),
           ),
-          TextButton(
-            onPressed: () =>
-                context.go(auth.isMechanic ? '/jobs' : '/bookings'),
-            child: Text(auth.isMechanic ? 'งานซ่อม' : 'การจองของฉัน'),
-          ),
+          const AppMenu(),
         ],
       ),
       body: Center(
@@ -129,6 +126,13 @@ class ShopScreen extends StatelessWidget {
                                       )
                                     : null,
                                 child: const Text('จองกับร้านนี้'),
+                              ),
+                            if (!auth.isMechanic)
+                              OutlinedButton.icon(
+                                onPressed: () =>
+                                    context.go('/messages?shop=${shop.id}'),
+                                icon: const Icon(Icons.chat_bubble_outline),
+                                label: const Text('แชตร้าน'),
                               ),
                             if (shop.canManage)
                               OutlinedButton(
