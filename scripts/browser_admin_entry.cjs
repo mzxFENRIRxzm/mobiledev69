@@ -30,13 +30,13 @@ print(json.dumps({'id':user.pk, 'username':username, 'password':password}))
   const context = await browser.newContext();
   const page = await context.newPage();
   page.setDefaultTimeout(45000);
-  stage = 'cold /admin without session';
-  await page.goto('http://localhost:50000/admin');
+  stage = 'cold /admin-dashboard without session';
+  await page.goto('http://localhost:50000/admin-dashboard');
   await page.waitForURL('**/login');
   await semantics(page);
   await page.getByRole('button', { name: 'เข้าสู่ระบบ THE_X' }).waitFor();
   assert.equal(await page.locator('#the-x-startup').count(), 0);
-  console.log('PASS: cold /admin renders login instead of a blank page');
+  console.log('PASS: cold /admin-dashboard renders login instead of a blank page');
   stage = 'OIDC admin login';
   await page.getByRole('button', { name: 'เข้าสู่ระบบ THE_X' }).click();
   await page.waitForURL('**/accounts/login/**');
@@ -46,7 +46,7 @@ print(json.dumps({'id':user.pk, 'username':username, 'password':password}))
   const identity = page.waitForResponse(r => r.url().endsWith('/api/me/') && r.status() === 200);
   await page.locator('[name=allow]').click();
   assert.equal((await (await identity).json()).role, 'admin');
-  await page.waitForURL('**/admin');
+  await page.waitForURL('**/admin-dashboard');
   await semantics(page);
   await page.getByText('จัดการระบบ', { exact: true }).waitFor();
   console.log('PASS: real OIDC callback renders Flutter Admin');
@@ -56,7 +56,7 @@ print(json.dumps({'id':user.pk, 'username':username, 'password':password}))
   await page.getByText('จัดการระบบ', { exact: true }).waitFor();
   const second = await context.newPage();
   second.setDefaultTimeout(45000);
-  await second.goto('http://localhost:50000/admin');
+  await second.goto('http://localhost:50000/admin-dashboard');
   await second.waitForURL('**/login');
   await semantics(second);
   await second.getByRole('button', { name: 'เข้าสู่ระบบ THE_X' }).waitFor();

@@ -15,15 +15,7 @@ class ProfileScreen extends StatelessWidget {
     final vm = context.watch<ProfileViewModel>();
     final auth = context.watch<AuthViewModel>();
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('โปรไฟล์ของฉัน'),
-        leading: IconButton(
-          tooltip: 'กลับหน้าหลัก',
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go(auth.isMechanic ? '/jobs' : '/garage'),
-        ),
-        actions: const [AppMenu()],
-      ),
+      appBar: const TheXAppBar(title: 'โปรไฟล์ของฉัน'),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 640),
@@ -200,9 +192,10 @@ class _ProfileFormState extends State<ProfileForm> {
           textInputAction: TextInputAction.next,
           decoration: const InputDecoration(labelText: 'อีเมล (ไม่บังคับ)'),
           validator: (value) =>
-              (value?.trim().isEmpty ?? true) || RegExp(
-                r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
-              ).hasMatch(value?.trim() ?? '')
+              (value?.trim().isEmpty ?? true) ||
+                  RegExp(
+                    r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
+                  ).hasMatch(value?.trim() ?? '')
               ? null
               : 'กรุณากรอกอีเมลให้ถูกต้อง',
         ),

@@ -175,7 +175,7 @@ try {
     Write-Host 'Anyone with this URL can open the app without using the same Wi-Fi.'
     Write-Host 'Press Ctrl+C to close the public tunnel and all local services.' -ForegroundColor Yellow
     if (-not $ExposeDjangoAdmin) {
-        Write-Host 'Django Admin is blocked on the public tunnel. Flutter /admin remains available.'
+        Write-Host 'Django Admin is blocked on the public tunnel. Flutter /admin-dashboard remains available.'
     }
 
     while ($true) {

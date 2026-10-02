@@ -19,6 +19,7 @@ DEMO_EMAIL_VERIFICATION_LINK = os.getenv(
 LOCAL_USERNAME_RESET_ENABLED = os.getenv("LOCAL_USERNAME_RESET_ENABLED", "false").lower() == "true"
 AI_CHAT_WEBHOOK_URL = os.getenv("AI_CHAT_WEBHOOK_URL", "")
 AI_CHAT_WEBHOOK_TOKEN = os.getenv("AI_CHAT_WEBHOOK_TOKEN", "")
+AI_CHAT_INTERNAL_N8N = os.getenv("AI_CHAT_INTERNAL_N8N", "false").lower() == "true"
 GEOCODING_REVERSE_URL = os.getenv('GEOCODING_REVERSE_URL', 'https://photon.komoot.io/reverse')
 GEOCODING_FORWARD_URL = os.getenv('GEOCODING_FORWARD_URL', 'https://photon.komoot.io/api')
 ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")

@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'core/api/api_service.dart';
 import 'core/auth/auth_service.dart';
 import 'core/auth/auth_storage.dart';
+import 'core/auth/return_path.dart';
+import 'core/ui/app_theme.dart';
 import 'features/auth/auth_repository.dart';
 import 'features/auth/auth_view_model.dart';
 import 'features/auth/login_screen.dart';
@@ -21,6 +23,7 @@ import 'features/profile/profile_repository.dart';
 import 'features/profile/profile_view_model.dart';
 import 'features/profile/profile_screen.dart';
 import 'features/chat/chat_screen.dart';
+import 'features/notifications/notification_store.dart';
 
 class TheXApp extends StatefulWidget {
   const TheXApp({super.key});
@@ -33,29 +36,57 @@ class _TheXAppState extends State<TheXApp> {
   late final ApiService api;
   late final AuthViewModel auth;
   late final GoRouter router;
+  late final NotificationStore notifications;
+  String? returnPath;
+  Future<void> _restore(AuthStorage storage) async {
+    final location = Uri.base;
+    returnPath = safeReturnPath(
+      location.path + (location.hasQuery ? '?${location.query}' : ''),
+    );
+    if (location.path == '/callback') {
+      returnPath = safeReturnPath(await storage.read(key: 'return_path'));
+    }
+    if (returnPath != null) {
+      await storage.write(key: 'return_path', value: returnPath);
+    }
+    await auth.restore(location);
+    if (auth.username != null || location.path == '/login') {
+      await storage.delete(key: 'return_path');
+    }
+  }
+
+  void _syncNotifications() => notifications.setAccount(
+    auth.user == null ? null : '${auth.username}:${auth.user!.role}',
+  );
   @override
   void initState() {
     super.initState();
     // Keep OIDC credentials and PKCE state in the current browser tab.
-    authService = AuthService.withStorage(createAuthStorage());
+    final storage = createAuthStorage();
+    authService = AuthService.withStorage(storage);
     api = ApiService(authService);
     auth = AuthViewModel(AuthRepository(authService, api));
+    notifications = NotificationStore(api);
+    auth.addListener(_syncNotifications);
     router = GoRouter(
       refreshListenable: auth,
       redirect: (context, state) {
         if (auth.loading) {
           if (state.matchedLocation == '/loading') return null;
-          return state.matchedLocation == '/profile'
-              ? '/loading?next=profile'
-              : '/loading';
+          return '/loading';
         }
         if (auth.username == null) {
           return state.matchedLocation == '/login' ? null : '/login';
         }
-        if (auth.isAdmin) {
-          return state.matchedLocation == '/admin' ? null : '/admin';
+        if (returnPath != null) {
+          final target = returnPath!;
+          returnPath = null;
+          if (state.uri.toString() != target) return target;
         }
-        if (state.matchedLocation == '/admin') {
+        if (auth.isAdmin) {
+          return state.matchedLocation == '/admin-dashboard' ? null : '/admin-dashboard';
+        }
+        if (state.matchedLocation == '/admin-dashboard') {
           return auth.isMechanic ? '/jobs' : '/garage';
         }
         if (state.matchedLocation == '/loading' &&
@@ -91,11 +122,15 @@ class _TheXAppState extends State<TheXApp> {
             child: const ProfileScreen(),
           ),
         ),
-        GoRoute(path: '/admin', builder: (_, _) => const AdminScreen()),
+        GoRoute(path: '/admin-dashboard', builder: (_, _) => const AdminScreen()),
         GoRoute(
           path: '/messages',
           builder: (_, state) => MessagesScreen(
+            key: ValueKey(state.uri.toString()),
             initialShop: int.tryParse(state.uri.queryParameters['shop'] ?? ''),
+            initialConversation: int.tryParse(
+              state.uri.queryParameters['conversation'] ?? '',
+            ),
           ),
         ),
         GoRoute(path: '/ai-chat', builder: (_, _) => const AiChatScreen()),
@@ -135,12 +170,14 @@ class _TheXAppState extends State<TheXApp> {
         ),
       ],
     );
-    auth.restore(Uri.base);
+    _restore(storage);
   }
 
   @override
   void dispose() {
     router.dispose();
+    auth.removeListener(_syncNotifications);
+    notifications.dispose();
     auth.dispose();
     super.dispose();
   }
@@ -150,26 +187,12 @@ class _TheXAppState extends State<TheXApp> {
     providers: [
       Provider.value(value: api),
       ChangeNotifierProvider.value(value: auth),
+      ChangeNotifierProvider.value(value: notifications),
     ],
     child: MaterialApp.router(
       title: 'THE_X · Your ride, cared for',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xffc7f36b),
-          brightness: Brightness.dark,
-          primary: const Color(0xffc7f36b),
-          surface: const Color(0xff151e20),
-        ),
-        scaffoldBackgroundColor: const Color(0xff101719),
-        inputDecorationTheme: const InputDecorationTheme(
-          border: OutlineInputBorder(),
-          filled: true,
-        ),
-        appBarTheme: const AppBarTheme(backgroundColor: Color(0xff101719)),
-      ),
+      theme: buildAppTheme(),
       routerConfig: router,
     ),
   );

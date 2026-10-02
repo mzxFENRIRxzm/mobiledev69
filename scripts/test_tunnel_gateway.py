@@ -12,7 +12,7 @@ class TunnelGatewayTests(unittest.TestCase):
     def test_routes_django_and_flutter_without_admin_collision(self):
         for path in ('/api/me/', '/openid/authorize/', '/accounts/login/', '/admin/auth/user/'):
             self.assertEqual(tunnel_gateway.route_for(path), 'backend')
-        for path in ('/', '/login', '/callback?code=1', '/admin'):
+        for path in ('/', '/login', '/callback?code=1', '/admin-dashboard'):
             self.assertEqual(tunnel_gateway.route_for(path.split('?')[0]), 'frontend')
 
     def test_static_path_cannot_escape_root(self):

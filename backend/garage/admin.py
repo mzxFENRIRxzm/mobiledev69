@@ -4,13 +4,20 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin
 from django.db.models import Count
 from .roles import RoleChangeForm, RoleCreationForm
-from .models import Motorcycle, Shop, Booking, BookingEvent, UserProfile
+from .models import Motorcycle, Shop, Booking, BookingEvent, UserProfile, KnowledgeChunk
 from .uploads import clean_shop_photo
 
 admin.site.unregister(get_user_model())
 admin.site.site_header = "THE_X · จัดการระบบ"
 admin.site.site_title = "THE_X Admin"
 admin.site.index_title = "ผู้ใช้ โรงรถ ร้านบริการ และงานซ่อม"
+
+
+@admin.register(KnowledgeChunk)
+class KnowledgeChunkAdmin(admin.ModelAdmin):
+    list_display = ("title", "locator", "is_active", "updated_at")
+    list_filter = ("is_active",)
+    search_fields = ("title", "locator", "content")
 
 
 class RoleFilter(admin.SimpleListFilter):

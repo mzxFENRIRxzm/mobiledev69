@@ -22,7 +22,7 @@ Set-Location 'D:\Project\Project_Flutter\mobiledev69'
 
 สคริปต์จะสร้าง Flutter Web ใหม่ด้วย ngrok origin, ตั้ง OIDC client, collect static, เปิด Django ด้วย `DEBUG=false`, Preview, gateway และ ngrok จากนั้นแสดง `THE_X public URL` URL นี้เปิดจากโทรศัพท์หรือเครือข่ายอื่นได้ กด `Ctrl+C` เพื่อหยุดชุดทดสอบ
 
-Django Admin `/admin/` ถูกปิดจาก public tunnel เป็นค่าเริ่มต้น แต่หน้า Flutter `/admin` ยังทำงาน หากต้องทดสอบ Django Admin ชั่วคราวและบัญชีมีรหัสผ่านที่แข็งแรง:
+Django Admin `/admin/` ถูกปิดจาก public tunnel เป็นค่าเริ่มต้น แต่หน้า Flutter `/admin-dashboard` ยังทำงาน หากต้องทดสอบ Django Admin ชั่วคราวและบัญชีมีรหัสผ่านที่แข็งแรง:
 
 ```powershell
 .\scripts\run_tunnel.ps1 -ExposeDjangoAdmin

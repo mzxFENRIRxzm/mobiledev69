@@ -6,6 +6,7 @@ import '../../auth/app_menu.dart';
 import '../domain/motorcycle.dart';
 import 'garage_view_model.dart';
 import 'customer_overview.dart';
+import '../../../core/ui/app_widgets.dart';
 
 class GarageScreen extends StatelessWidget {
   const GarageScreen({super.key});
@@ -14,47 +15,79 @@ class GarageScreen extends StatelessWidget {
     final vm = context.watch<GarageViewModel>();
     final auth = context.watch<AuthViewModel>();
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'THE_X',
-          style: TextStyle(letterSpacing: 4, fontWeight: FontWeight.w900),
-        ),
-        actions: [
-          IconButton(
-            onPressed: () => context.go('/ai-chat'),
-            tooltip: 'แชต AI',
-            icon: const Icon(Icons.smart_toy_outlined),
-          ),
-          IconButton(
-            onPressed: () => context.go('/messages'),
-            tooltip: 'แชตข้อความ',
-            icon: const Icon(Icons.chat_bubble_outline),
-          ),
-          const AppMenu(),
-        ],
-      ),
+      appBar: const TheXAppBar(title: 'ภาพรวมและโรงรถของฉัน'),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1050),
+          constraints: const BoxConstraints(maxWidth: 1200),
           child: ListView(
             padding: const EdgeInsets.all(24),
             children: [
-              Text(
-                'ยินดีต้อนรับ ${auth.username}',
-                style: TextStyle(color: Theme.of(context).colorScheme.primary),
+              Reveal(
+                child: RideHero(
+                  eyebrow: 'ยินดีต้อนรับกลับ · ${auth.username}',
+                  title: 'พร้อมสำหรับ\nทุกเส้นทางของคุณ',
+                  subtitle: 'ดูแลรถ จองบริการ และติดตามงานซ่อมได้ในที่เดียว',
+                  action: FilledButton.icon(
+                    onPressed: () => context.go('/bookings'),
+                    icon: const Icon(Icons.calendar_month_outlined),
+                    label: const Text('วางแผนการดูแลรถ'),
+                  ),
+                ),
               ),
-              const SizedBox(height: 12),
-              const Text(
-                'โรงรถของฉัน',
-                style: TextStyle(fontSize: 34, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '${vm.motorcycles.length} คัน · ดูแลรถให้พร้อมสำหรับทุกเส้นทาง',
-                style: const TextStyle(color: Colors.white60),
+              const SizedBox(height: 24),
+              Reveal(
+                delay: 70,
+                child: LayoutBuilder(
+                  builder: (context, size) {
+                    final cards = [
+                      FeatureCard(
+                        icon: Icons.storefront_outlined,
+                        title: 'ค้นหาร้านบริการ',
+                        subtitle: 'เลือกร้านและดูตำแหน่งบนแผนที่',
+                        onTap: () => context.go('/shops'),
+                      ),
+                      FeatureCard(
+                        icon: Icons.auto_awesome_outlined,
+                        title: 'ปรึกษาผู้ช่วย AI',
+                        subtitle: 'สอบถามอาการและการดูแลเบื้องต้น',
+                        onTap: () => context.go('/ai-chat'),
+                      ),
+                      FeatureCard(
+                        icon: Icons.chat_bubble_outline,
+                        title: 'พูดคุยกับร้าน',
+                        subtitle: 'สอบถามรายละเอียดก่อนเข้ารับบริการ',
+                        onTap: () => context.go('/messages'),
+                      ),
+                    ];
+                    return size.maxWidth >= 950 &&
+                            MediaQuery.textScalerOf(context).scale(14) <= 18
+                        ? Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              for (int i = 0; i < cards.length; i++) ...[
+                                if (i > 0) const SizedBox(width: 16),
+                                Expanded(child: cards[i]),
+                              ],
+                            ],
+                          )
+                        : Column(
+                            children: [
+                              for (final card in cards)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: card,
+                                ),
+                            ],
+                          );
+                  },
+                ),
               ),
               const SizedBox(height: 28),
-              const CustomerOverview(),
+              const Reveal(delay: 130, child: CustomerOverview()),
+              SectionHeading(
+                title: 'โรงรถของฉัน',
+                subtitle: '${vm.motorcycles.length} คัน · ข้อมูลรถที่คุณดูแล',
+              ),
               Row(
                 children: [
                   Expanded(

@@ -1,6 +1,7 @@
 import '../../core/api/api_service.dart';
 import '../../core/auth/auth_service.dart';
 import '../../core/result.dart';
+import 'package:dio/dio.dart';
 
 class AppUser {
   final String username;
@@ -36,7 +37,13 @@ class AuthRepository {
   Future<Result<void>> logout() async {
     try {
       final uri = auth.logoutUri();
-      await api.request('logout/', method: 'POST');
+      try {
+        await api.request('logout/', method: 'POST');
+      } on DioException catch (error) {
+        // A revoked/inactive account has no usable API session to revoke.
+        // It must still be able to discard this tab's credentials.
+        if (error.response?.statusCode != 401) rethrow;
+      }
       await auth.clear();
       await auth.endProviderSession(uri);
       return const Success(null);

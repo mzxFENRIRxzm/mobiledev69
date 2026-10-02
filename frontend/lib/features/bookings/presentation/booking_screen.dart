@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../core/api/api_service.dart';
 import '../../../core/result.dart';
@@ -11,6 +10,7 @@ import '../domain/booking.dart';
 import 'booking_view_model.dart';
 import '../../shops/data/shop_repository.dart';
 import '../../shops/domain/shop.dart';
+import '../../../core/ui/app_widgets.dart';
 
 class BookingScreen extends StatelessWidget {
   final int? initialShop;
@@ -20,16 +20,8 @@ class BookingScreen extends StatelessWidget {
     final vm = context.watch<BookingViewModel>();
     final auth = context.watch<AuthViewModel>();
     return Scaffold(
-      appBar: AppBar(
-        title: Text(auth.isMechanic ? 'งานซ่อมของช่าง' : 'การจองซ่อม'),
-        actions: [
-          IconButton(
-            onPressed: () => context.go('/messages'),
-            tooltip: 'แชตข้อความ',
-            icon: const Icon(Icons.chat_bubble_outline),
-          ),
-          const AppMenu(),
-        ],
+      appBar: TheXAppBar(
+        title: auth.isMechanic ? 'งานซ่อมของช่าง' : 'การจองซ่อม',
       ),
       body: Center(
         child: ConstrainedBox(
@@ -37,15 +29,13 @@ class BookingScreen extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.all(24),
             children: [
-              Text(
-                'THE_X · ${auth.username}',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                auth.isMechanic
-                    ? 'งานของร้านคุณ · เริ่มและปิดงานได้โดยช่างผู้รับงาน'
-                    : 'เลือกนัดหมายและติดตามการดูแลรถของคุณ',
+              Reveal(
+                child: SectionHeading(
+                  title: auth.isMechanic ? 'คิวงานของร้าน' : 'การจองซ่อมของคุณ',
+                  subtitle: auth.isMechanic
+                      ? 'งานของร้านคุณ · เริ่มและปิดงานได้โดยช่างผู้รับงาน'
+                      : 'เลือกนัดหมายและติดตามการดูแลรถของคุณ',
+                ),
               ),
               const SizedBox(height: 16),
               Wrap(

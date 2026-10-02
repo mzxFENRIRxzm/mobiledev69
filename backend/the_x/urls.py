@@ -16,13 +16,15 @@ from garage.oidc import TheXProviderInfoView
 from garage.bookings import BookingViewSet
 from garage.shops import ShopViewSet
 from garage.chat import ConversationViewSet
-from garage.ai_chat import ai_chat
+from garage.notifications import NotificationViewSet
+from garage.ai_chat import ai_chat, ai_conversations, ai_conversation
 
 router = DefaultRouter()
 router.register("shops", ShopViewSet, basename="shop")
 router.register("motorcycles", MotorcycleViewSet, basename="motorcycle")
 router.register("bookings", BookingViewSet, basename="booking")
 router.register("conversations", ConversationViewSet, basename="conversation")
+router.register("notifications", NotificationViewSet, basename="notification")
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/login/", TheXLoginView.as_view()),
@@ -39,6 +41,8 @@ urlpatterns = [
     path("api/profile/", my_profile),
     path("api/logout/", sign_out),
     path("api/ai-chat/", ai_chat),
+    path("api/ai-conversations/", ai_conversations),
+    path("api/ai-conversations/<uuid:pk>/", ai_conversation),
     path("api/", include(router.urls)),
 ]
 if settings.DEBUG:

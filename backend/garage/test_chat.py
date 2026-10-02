@@ -38,7 +38,7 @@ class ChatApiTests(BookingSetup, TestCase):
         self.assertEqual(self.api.post('/api/ai-chat/', {'message': 'ทดสอบ'}).status_code, 503)
         self.assertEqual(APIClient().post('/api/ai-chat/', {'message': 'ทดสอบ'}).status_code, 401)
 
-    @override_settings(AI_CHAT_WEBHOOK_URL='https://example.test/webhook', AI_CHAT_WEBHOOK_TOKEN='')
+    @override_settings(AI_CHAT_WEBHOOK_URL='https://example.test/webhook', AI_CHAT_WEBHOOK_TOKEN='test-only')
     @patch('garage.ai_chat.urlopen')
     def test_ai_chat_returns_webhook_reply(self, open_url):
         from io import BytesIO

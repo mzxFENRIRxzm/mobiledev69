@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/config.dart';
 import 'auth_view_model.dart';
+import 'app_menu.dart';
+import '../../core/ui/app_widgets.dart';
 
 class AdminScreen extends StatelessWidget {
   const AdminScreen({super.key});
@@ -11,25 +13,23 @@ class AdminScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthViewModel>();
     return Scaffold(
-      appBar: AppBar(
-        title: Text('THE_X · Admin · ${auth.username}'),
-        actions: [
-          TextButton(
-            onPressed: auth.loading ? null : auth.logout,
-            child: const Text('ออกจากระบบทุกอุปกรณ์'),
-          ),
-        ],
-      ),
+      appBar: const TheXAppBar(title: 'จัดการระบบ'),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 560),
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('จัดการระบบ', style: TextStyle(fontSize: 30)),
+                Reveal(
+                  child: RideHero(
+                    eyebrow: 'ADMIN · ${auth.username}',
+                    title: 'ดูแลระบบ\nจากที่เดียว',
+                    subtitle: 'จัดการบัญชี บทบาท และร้านบริการของ THE_X',
+                  ),
+                ),
                 const SizedBox(height: 16),
                 const Text(
                   'จัดการผู้ใช้และเลือกบทบาท Adminuser, Mechanicuser หรือ Customeruser ผ่าน Django admin แล้วกำหนดร้านให้ช่างใน Shops',

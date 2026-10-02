@@ -4,7 +4,7 @@
 
 Customer dashboard (`/garage`) now shows recent bookings and a map of service shops with saved coordinates. Select a marker to book or start a shop conversation. The message icon and THE_X menu also open customer–shop chat; mechanics see conversations for shops they currently belong to. Messages refresh every eight seconds and are stored in PostgreSQL. Only the customer and current shop mechanics can read or send in that room. The map uses OpenStreetMap tiles with visible attribution and requires an internet connection.
 
-AI chat (`/ai-chat`) uses a server-side HTTPS webhook. Set `AI_CHAT_WEBHOOK_URL` and, if needed, `AI_CHAT_WEBHOOK_TOKEN` in `deploy/.env`, then recreate the backend container. The webhook receives JSON `{"message":"..."}` and must reply with JSON `{"reply":"..."}`. The token is sent as a Bearer header from Django, never from Flutter. With no webhook configured, the screen reports that AI chat is unavailable. Avoid entering personal data or booking details in the prompt; requests are forwarded to the configured webhook. The AI endpoint is limited to 10 requests per user per minute. For a public deployment, use a tile provider suited to the expected traffic and add moderation/retention policy for conversations.
+AI chat (`/ai-chat`) now stores private conversation history in PostgreSQL and connects Django to n8n/Gemini, with retry protection, bounded context and reviewed manual excerpts. Run `python scripts/setup_n8n.py`, then use both `compose.deploy.yaml` and `compose.ai.yaml`. Open n8n at `http://localhost:15678`, enter the Gemini key in Credentials, and Publish the workflow. No real key or manual corpus is included; live model quality remains unverified. See [AI setup, import and testing](docs/ai-chat-n8n.md). Never put API keys in Flutter or include personal data in prompts.
 
 แอปดูแลรถจักรยานยนต์ พัฒนาต่อยอดแนวคิดจาก [THE_ONE](https://github.com/zxSUPHASANxz/THE_ONE_FINAL/tree/f4db01a) เวอร์ชันก่อนเปลี่ยนหน้า chatbot เป็นธีมแดง–ทอง งานรายวิชาอยู่บน branch `project`
 
@@ -56,7 +56,7 @@ AI chat (`/ai-chat`) uses a server-side HTTPS webhook. Set `AI_CHAT_WEBHOOK_URL`
 
 ดู [ผลตรวจและเกณฑ์ปิดขอบเขตสี่](docs/phase-4-testing.md)
 
-ส่วนที่ยังไม่ได้ทำ: แชท AI/n8n การส่งอีเมลผ่าน SMTP จริง และ production deployment ถาวร รุ่นนี้ยังเป็น **Flutter Web สำหรับ local/temporary demo** ไม่ใช่ Android/iOS build หรือ production deployment วันนัดเป็นคำขอ ยังไม่มีระบบคำนวณช่องเวลาว่างของร้าน
+ส่วนที่ยังต้องเตรียม: Gemini key และคู่มือจริงสำหรับทดสอบ AI/RAG, การส่งอีเมลผ่าน SMTP จริง และ production deployment ถาวร รุ่นนี้ยังเป็น **Flutter Web สำหรับ local/temporary demo** ไม่ใช่ Android/iOS build หรือ production deployment วันนัดเป็นคำขอ ยังไม่มีระบบคำนวณช่องเวลาว่างของร้าน
 
 ## ใช้ Admin, Mechanic และ Customer พร้อมกัน
 
@@ -92,7 +92,7 @@ Flutter Web เก็บ OIDC session แยกตามแท็บแล้ว
 
 ยังไม่มีเมนูฐานความรู้/Embedding, แชต และแจ้งเตือน เพราะฟีเจอร์เหล่านี้ยังไม่อยู่ใน THE_X รุ่นปัจจุบัน
 
-1. ล็อกอิน Adminuser ใน profile Admin; Flutter จะเปิดหน้า `/admin` พร้อมปุ่ม **จัดการผู้ใช้และบทบาท**
+1. ล็อกอิน Adminuser ใน profile Admin; Flutter จะเปิดหน้า `/admin-dashboard` พร้อมปุ่ม **จัดการผู้ใช้และบทบาท**
 2. ปุ่มเปิด Django admin → Users (`http://localhost:8000/admin/auth/user/`) หากมีหน้าล็อกอินให้ใช้บัญชี Admin เดิม
 3. เพิ่มผู้ใช้หรือเลือกผู้ใช้เดิม แล้วเลือก **บทบาท THE_X** เป็น Customeruser / Mechanicuser / Adminuser และกด Save
 4. หากเป็น Mechanicuser ให้เปิด Shops และกำหนดร้านที่ช่างเป็นสมาชิกด้วย บทบาทช่างอย่างเดียวไม่ให้สิทธิ์ทุกร้าน
@@ -215,11 +215,11 @@ Set-Location 'D:\Project\Project_Flutter\mobiledev69\frontend'
 
 เมื่อขึ้นข้อความพร้อมให้บริการ ให้เปิด `http://localhost:50000/` ใน Chrome เอง คำสั่ง `web-server` จะไม่เปิดเบราว์เซอร์ให้อัตโนมัติ
 
-สำหรับ Flutter 3.44.2 ที่ใช้อยู่ ใช้ `web-server` และปิด experimental hot reload ตามคำสั่งนี้ การใช้ `-d chrome` ยังพบหน้า `/admin` จอขาวแม้ปิด hot reload แล้ว ขณะที่ `web-server` ผ่านการทดสอบด้านล่าง (มี [รายงานอาการ debug loader ใกล้เคียง](https://github.com/flutter/flutter/issues/188264)) ใช้ `R` เพื่อ hot restart หลังแก้ Dart โหมดนี้ยังเป็น debug; flag ถูกประกาศ deprecated แล้วจึงต้องทดสอบใหม่เมื่ออัปเกรด SDK ไม่ควรถือเป็นข้อกำหนดถาวรของแอป
+สำหรับ Flutter 3.44.2 ที่ใช้อยู่ ใช้ `web-server` และปิด experimental hot reload ตามคำสั่งนี้ การใช้ `-d chrome` เคยพบหน้า Admin จอขาวแม้ปิด hot reload แล้ว ขณะที่ `web-server` ผ่านการทดสอบด้านล่าง (มี [รายงานอาการ debug loader ใกล้เคียง](https://github.com/flutter/flutter/issues/188264)) ใช้ `R` เพื่อ hot restart หลังแก้ Dart โหมดนี้ยังเป็น debug; flag ถูกประกาศ deprecated แล้วจึงต้องทดสอบใหม่เมื่ออัปเกรด SDK ไม่ควรถือเป็นข้อกำหนดถาวรของแอป
 
 หากค้างหน้า callback ให้หยุด Flutter เดิมด้วย `Ctrl+C` แล้วเริ่มด้วยคำสั่งด้านบน เปิด `http://localhost:50000/` และล็อกอินใหม่ ไม่ใช้ URL callback เก่าที่มี code ซ้ำ ไม่ต้องล้างข้อมูลล็อกอินหรือเปลี่ยนค่า OIDC
 
-ตรวจบน Flutter 3.44.2 แบบ `web-server` แล้ว: เปิด `/admin` โดยไม่มี session แสดง login, ล็อกอิน Admin ผ่าน OIDC แล้วแสดงหน้าจัดการระบบ และ reload แท็บเดิมยังใช้ session เดิมได้ แท็บใหม่ต้องล็อกอินแยก ปุ่มจัดการผู้ใช้เปิด Django Admin ได้ ทดสอบด้วย `npm.cmd run test:e2e:admin-entry` ซึ่งสร้างและลบเฉพาะบัญชี Admin ชั่วคราวของชุดทดสอบ
+ตรวจบน Flutter 3.44.2 แบบ `web-server` แล้ว: เปิด `/admin-dashboard` โดยไม่มี session แสดง login, ล็อกอิน Admin ผ่าน OIDC แล้วแสดงหน้าจัดการระบบ และ reload แท็บเดิมยังใช้ session เดิมได้ แท็บใหม่ต้องล็อกอินแยก ปุ่มจัดการผู้ใช้เปิด Django Admin ได้ ทดสอบด้วย `npm.cmd run test:e2e:admin-entry` ซึ่งสร้างและลบเฉพาะบัญชี Admin ชั่วคราวของชุดทดสอบ
 
 หน้าเว็บมีสถานะกำลังโหลดตั้งแต่ก่อน Flutter เริ่มทำงาน หากโหลด bootstrap ไม่สำเร็จหรือยังไม่แสดงเฟรมแรกภายใน 30 วินาที จะแสดงปุ่มลองใหม่โดยไม่ลบข้อมูลล็อกอิน ทดสอบด้วย `npm.cmd run test:startup` ส่วน acceptance suite หลายบัญชีเต็มชุดยังใช้ Preview ตามเดิม
 

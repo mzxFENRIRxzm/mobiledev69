@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models.functions import Lower
@@ -121,7 +122,74 @@ class ShopMessage(models.Model):
     conversation = models.ForeignKey(ShopConversation, on_delete=models.CASCADE, related_name="messages")
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     body = models.TextField(max_length=2000)
+    request_id = models.UUIDField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["created_at", "pk"]
+        constraints = [models.UniqueConstraint(fields=["conversation", "sender", "request_id"], name="shop_message_request_unique")]
+
+
+class Notification(models.Model):
+    recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    title = models.CharField(max_length=240)
+    conversation = models.ForeignKey(ShopConversation, null=True, blank=True, on_delete=models.CASCADE)
+    message = models.ForeignKey(ShopMessage, null=True, blank=True, on_delete=models.CASCADE)
+    booking = models.ForeignKey(Booking, null=True, blank=True, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    read_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-pk']
+        indexes = [models.Index(fields=['recipient', 'read_at', '-id'], name='notification_inbox_idx')]
+
+
+class AiConversation(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    title = models.CharField(max_length=80, default="บทสนทนาใหม่")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+
+class AiTurn(models.Model):
+    conversation = models.ForeignKey(AiConversation, on_delete=models.CASCADE, related_name="turns")
+    request_id = models.UUIDField(default=uuid4)
+    message = models.TextField(max_length=1000)
+    reply = models.TextField(blank=True, max_length=6000)
+    status = models.CharField(max_length=12, default="pending",
+                              choices=[("pending", "กำลังตอบ"), ("completed", "สำเร็จ"), ("failed", "ไม่สำเร็จ")])
+    sources = models.JSONField(default=list)
+    error_code = models.CharField(max_length=32, blank=True)
+    latency_ms = models.PositiveIntegerField(null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["created_at", "pk"]
+        constraints = [
+            models.UniqueConstraint(fields=["conversation", "request_id"], name="ai_request_unique"),
+            models.UniqueConstraint(fields=["conversation"], condition=models.Q(status="pending"),
+                                    name="ai_one_pending_turn"),
+        ]
+
+
+class KnowledgeChunk(models.Model):
+    """Reviewed, small manual excerpts. No unreviewed web crawling or user PII."""
+    title = models.CharField(max_length=200)
+    source_url = models.URLField(max_length=1000)
+    locator = models.CharField(max_length=120, blank=True, help_text="รุ่น/ปี/เลขหน้าหรือหัวข้อ")
+    keywords = models.JSONField(default=list, help_text='คำค้นภาษาไทย/ชื่อรุ่น เช่น ["สตาร์ท", "แบตเตอรี่"]')
+    content = models.TextField(max_length=1800)
+    is_active = models.BooleanField(default=False, help_text="เปิดหลังตรวจความถูกต้องและสิทธิ์ใช้ข้อมูล")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def clean(self):
+        if not isinstance(self.keywords, list) or not 1 <= len(self.keywords) <= 30 or any(
+            not isinstance(word, str) or not 2 <= len(word.strip()) <= 100 for word in self.keywords
+        ):
+            raise ValidationError({"keywords": "ระบุรายการคำค้น 1–30 คำ แต่ละคำยาว 2–100 ตัวอักษร"})
+        if not self.source_url.startswith(("https://", "http://")):
+            raise ValidationError({"source_url": "ใช้ลิงก์ HTTP หรือ HTTPS ของแหล่งข้อมูล"})

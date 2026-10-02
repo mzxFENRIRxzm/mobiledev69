@@ -7,6 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import APIException, PermissionDenied, NotFound
 from rest_framework.response import Response
 from .models import Booking, BookingEvent, Motorcycle, Shop
+from .notifications import notify_booking
 
 
 def is_mechanic(user):
@@ -77,6 +78,7 @@ class BookingViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.Retr
                 booking = serializer.save(customer=self.request.user, shop_name=shop.name,
                     motorcycle_label=f"{bike.brand} {bike.model} · {bike.license_plate}")
                 BookingEvent.objects.create(booking=booking, actor=self.request.user, status=booking.status)
+                notify_booking(booking, self.request.user)
         except (Motorcycle.DoesNotExist, Shop.DoesNotExist):
             raise serializers.ValidationError("ไม่พบรถที่ต้องการจอง กรุณาโหลดใหม่")
         except IntegrityError:
@@ -134,4 +136,5 @@ class BookingViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.Retr
             booking.status = target
             booking.save()
             BookingEvent.objects.create(booking=booking, actor=request.user, status=target)
+            notify_booking(booking, request.user)
         return Response(self.get_serializer(booking).data)

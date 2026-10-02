@@ -4,7 +4,7 @@
 
 บริการในชุด Docker:
 
-- `web`: Caddy เสิร์ฟ Flutter Web, static/media และส่ง `/api/`, `/accounts/`, `/openid/`, `/admin/` ไป Django; หน้า Flutter `/admin` ยังเป็น route ของ Flutter
+- `web`: Caddy เสิร์ฟ Flutter Web, static/media และส่ง `/api/`, `/accounts/`, `/openid/`, `/admin` และ `/admin/` ไป Django; หน้า Flutter Admin ใช้ `/admin-dashboard`
 - `backend`: Django 5.2 ผ่าน Gunicorn พร้อม OIDC provider
 - `init`: ตรวจค่าการ deploy, migrate, collectstatic และสร้าง OIDC client; ไม่สร้าง demo user
 - `postgres`: PostgreSQL 17 เก็บข้อมูลใน `postgres_data`
@@ -28,7 +28,7 @@ docker compose --env-file deploy/.env -f compose.deploy.yaml ps
 docker compose --env-file deploy/.env -f compose.deploy.yaml exec backend python manage.py createsuperuser
 ```
 
-หน้า Flutter Admin อยู่ที่ `http://localhost:18080/admin` และ Django Admin อยู่ที่ `http://localhost:18080/admin/` (มี slash ท้าย) หลังล็อกอินด้วย superuser
+หน้า Flutter Admin อยู่ที่ `http://localhost:18080/admin-dashboard` และ Django Admin อยู่ที่ `http://localhost:18080/admin` หรือ `/admin/` หลังล็อกอินด้วย superuser
 
 ## Deploy บนโดเมนจริง
 

@@ -6,6 +6,7 @@ import '../../auth/auth_view_model.dart';
 import '../../auth/app_menu.dart';
 import '../domain/shop.dart';
 import 'shop_view_model.dart';
+import '../../../core/ui/app_widgets.dart';
 
 class ShopScreen extends StatelessWidget {
   const ShopScreen({super.key});
@@ -14,23 +15,20 @@ class ShopScreen extends StatelessWidget {
     final vm = context.watch<ShopViewModel>();
     final auth = context.watch<AuthViewModel>();
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('ร้านและศูนย์บริการ'),
-        actions: [
-          IconButton(
-            onPressed: () => context.go('/messages'),
-            tooltip: 'แชตข้อความ',
-            icon: const Icon(Icons.chat_bubble_outline),
-          ),
-          const AppMenu(),
-        ],
-      ),
+      appBar: const TheXAppBar(title: 'ร้านและศูนย์บริการ'),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1000),
           child: ListView(
             padding: const EdgeInsets.all(24),
             children: [
+              const Reveal(
+                child: SectionHeading(
+                  title: 'หาร้านที่ใช่ให้รถของคุณ',
+                  subtitle:
+                      'ดูรายละเอียด พูดคุยกับร้าน แล้วเลือกวันเข้ารับบริการ',
+                ),
+              ),
               TextField(
                 onChanged: vm.search,
                 decoration: const InputDecoration(
