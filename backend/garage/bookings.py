@@ -7,6 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import APIException, PermissionDenied, NotFound
 from rest_framework.response import Response
 from .models import Booking, BookingEvent, Motorcycle, Shop
+from .shop_visibility import available_shops, shop_available
 from .notifications import notify_booking
 
 
@@ -27,8 +28,8 @@ class BookingEventSerializer(serializers.ModelSerializer):
 
 
 class BookingSerializer(serializers.ModelSerializer):
-    shop = serializers.PrimaryKeyRelatedField(queryset=Shop.objects.filter(
-        accepting_bookings=True, awaiting_owner_verification=False), required=True, allow_null=False)
+    shop = serializers.PrimaryKeyRelatedField(queryset=Shop.objects.none(),
+                                              required=True, allow_null=False)
     customer_name = serializers.CharField(source="customer.username", read_only=True)
     mechanic_name = serializers.CharField(source="mechanic.username", read_only=True, default=None)
     events = BookingEventSerializer(many=True, read_only=True)
@@ -41,7 +42,9 @@ class BookingSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         request = self.context.get("request")
-        self.fields["motorcycle"].queryset = Motorcycle.objects.filter(owner=request.user) if request else Motorcycle.objects.none()
+        self.fields["motorcycle"].queryset = Motorcycle.objects.filter(
+            owner=request.user, archived_at__isnull=True) if request else Motorcycle.objects.none()
+        self.fields["shop"].queryset = available_shops().filter(accepting_bookings=True)
 
     def validate_appointment_at(self, value):
         if value <= timezone.now():
@@ -64,7 +67,7 @@ class BookingViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.Retr
             visible = Q(shop__mechanics=user) | Q(shop__isnull=True, mechanic=user)
         else:
             visible = Q(customer=user)
-        return Booking.objects.filter(visible).distinct().select_related("customer", "mechanic").prefetch_related("events__actor")
+        return Booking.objects.filter(visible, archived_at__isnull=True).distinct().select_related("customer", "mechanic").prefetch_related("events__actor")
 
     def perform_create(self, serializer):
         if is_mechanic(self.request.user):
@@ -72,9 +75,11 @@ class BookingViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.Retr
         try:
             with transaction.atomic():
                 shop = Shop.objects.select_for_update().get(pk=serializer.validated_data["shop"].pk)
-                if not shop.accepting_bookings or shop.awaiting_owner_verification:
+                if not shop.accepting_bookings or not shop_available(shop):
                     raise Conflict("ร้านนี้ปิดรับการจองแล้ว กรุณาเลือกร้านอื่น")
-                bike = Motorcycle.objects.select_for_update().get(pk=serializer.validated_data["motorcycle"].pk, owner=self.request.user)
+                bike = Motorcycle.objects.select_for_update().get(
+                    pk=serializer.validated_data["motorcycle"].pk,
+                    owner=self.request.user, archived_at__isnull=True)
                 booking = serializer.save(customer=self.request.user, shop_name=shop.name,
                     motorcycle_label=f"{bike.brand} {bike.model} · {bike.license_plate}")
                 BookingEvent.objects.create(booking=booking, actor=self.request.user, status=booking.status)
@@ -91,7 +96,8 @@ class BookingViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.Retr
         command = data.validated_data["action"]
         with transaction.atomic():
             # Lock the booking row itself, without a nullable outer join.
-            booking = get_object_or_404(Booking.objects.select_for_update(), pk=pk)
+            booking = get_object_or_404(Booking.objects.select_for_update(), pk=pk,
+                                        archived_at__isnull=True)
             mechanic = is_mechanic(request.user)
             if mechanic:
                 if booking.shop_id:
@@ -112,6 +118,8 @@ class BookingViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.Retr
             else:
                 if not mechanic:
                     raise PermissionDenied("เฉพาะช่างที่ได้รับสิทธิ์เท่านั้น")
+                if command in ["accept", "start"] and booking.shop_id and not shop_available(booking.shop):
+                    raise Conflict("ร้านถูกระงับบริการ จึงรับหรือเริ่มงานใหม่ไม่ได้")
                 if booking.customer_id == request.user.pk:
                     raise PermissionDenied("ไม่สามารถรับงานของตัวเองได้")
                 if command == "accept":

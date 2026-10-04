@@ -14,7 +14,7 @@ class MotorcycleViewSet(viewsets.ModelViewSet):
     serializer_class = MotorcycleSerializer
 
     def get_queryset(self):
-        return Motorcycle.objects.filter(owner=self.request.user)
+        return Motorcycle.objects.filter(owner=self.request.user, archived_at__isnull=True)
 
     def _save(self, serializer):
         try:

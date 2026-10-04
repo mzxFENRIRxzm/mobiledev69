@@ -42,7 +42,10 @@ def visible_notifications(user):
                    Q(booking__shop__isnull=True, booking__mechanic=user))
     else:
         visible = Q(conversation__customer=user) | Q(booking__customer=user)
-    return Notification.objects.filter(visible, recipient=user).distinct()
+    return Notification.objects.filter(visible, recipient=user,
+        hidden_at__isnull=True).filter(
+        Q(booking__isnull=True) | Q(booking__archived_at__isnull=True)).filter(
+        Q(conversation__isnull=True) | Q(conversation__archived_at__isnull=True)).distinct()
 
 
 class NotificationSerializer(serializers.ModelSerializer):

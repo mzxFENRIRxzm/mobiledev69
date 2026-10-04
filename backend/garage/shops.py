@@ -2,6 +2,7 @@ from rest_framework import mixins, serializers, viewsets
 from rest_framework.exceptions import PermissionDenied
 from .models import Shop
 from .bookings import is_mechanic
+from .shop_visibility import available_shops
 
 
 class ShopSerializer(serializers.ModelSerializer):
@@ -18,9 +19,12 @@ class ShopSerializer(serializers.ModelSerializer):
 
 
 class ShopViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet):
-    queryset = Shop.objects.filter(awaiting_owner_verification=False)
+    queryset = Shop.objects.none()
     serializer_class = ShopSerializer
     http_method_names = ["get", "patch", "head", "options"]
+
+    def get_queryset(self):
+        return available_shops()
 
     def perform_update(self, serializer):
         if not serializer.get_can_manage(serializer.instance):

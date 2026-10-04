@@ -10,11 +10,16 @@ from rest_framework.throttling import UserRateThrottle
 
 from .bookings import is_mechanic
 from .models import Shop, ShopConversation, ShopMessage
+from .shop_visibility import available_shops, shop_available
 from .notifications import notify_message, visible_notifications
 
 
 class MessageSerializer(serializers.ModelSerializer):
     sender_name = serializers.CharField(source="sender.username", read_only=True)
+    body = serializers.SerializerMethodField()
+
+    def get_body(self, message):
+        return "[ข้อความถูกซ่อนโดยผู้ดูแล]" if message.redacted_at else message.body
 
     class Meta:
         model = ShopMessage
@@ -24,7 +29,7 @@ class MessageSerializer(serializers.ModelSerializer):
 
 class ConversationSerializer(serializers.ModelSerializer):
     unread_count = serializers.IntegerField(read_only=True, default=0)
-    last_message = serializers.CharField(read_only=True, default='')
+    last_message = serializers.SerializerMethodField()
     last_message_at = serializers.DateTimeField(read_only=True, default=None)
     shop_name = serializers.CharField(source="shop.name", read_only=True)
     customer_name = serializers.CharField(source="customer.username", read_only=True)
@@ -35,11 +40,20 @@ class ConversationSerializer(serializers.ModelSerializer):
                   "unread_count", "last_message", "last_message_at"]
         read_only_fields = fields
 
+    def get_last_message(self, room):
+        if getattr(room, 'last_message_redacted_at', None):
+            return "[ข้อความถูกซ่อนโดยผู้ดูแล]"
+        return getattr(room, 'last_message_body', '') or ''
+
 
 class CreateConversationSerializer(serializers.Serializer):
     shop = serializers.PrimaryKeyRelatedField(
-        queryset=Shop.objects.filter(awaiting_owner_verification=False)
+        queryset=Shop.objects.none()
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["shop"].queryset = available_shops()
 
 
 class SendMessageSerializer(serializers.Serializer):
@@ -55,14 +69,15 @@ class ConversationViewSet(viewsets.ViewSet):
     def _visible(self, request):
         user = request.user
         visible = Q(shop__mechanics=user) if is_mechanic(user) else Q(customer=user)
-        return ShopConversation.objects.filter(visible).distinct().select_related("shop", "customer")
+        return ShopConversation.objects.filter(visible, archived_at__isnull=True).distinct().select_related("shop", "customer")
 
     def list(self, request):
         latest = ShopMessage.objects.filter(conversation_id=OuterRef('pk')).order_by('-pk')
         conversations = self._visible(request).annotate(
             unread_count=Count('notification', filter=Q(
                 notification__recipient=request.user, notification__read_at__isnull=True)),
-            last_message=Subquery(latest.values('body')[:1]),
+            last_message_body=Subquery(latest.values('body')[:1]),
+            last_message_redacted_at=Subquery(latest.values('redacted_at')[:1]),
             last_message_at=Subquery(latest.values('created_at')[:1]),
             last_message_id=Subquery(latest.values('pk')[:1]),
         ).order_by(F('last_message_id').desc(nulls_last=True), '-pk')
@@ -87,9 +102,14 @@ class ConversationViewSet(viewsets.ViewSet):
         serializer = CreateConversationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         with transaction.atomic():
+            shop = Shop.objects.select_for_update().get(pk=serializer.validated_data["shop"].pk)
+            if not shop_available(shop):
+                raise PermissionDenied("ร้านนี้ไม่เปิดให้เริ่มแชต")
             conversation, _ = ShopConversation.objects.get_or_create(
-                shop=serializer.validated_data["shop"], customer=request.user
+                shop=shop, customer=request.user
             )
+            if conversation.archived_at:
+                raise PermissionDenied("ห้องแชตนี้ถูกปิดโดยผู้ดูแล")
         return Response(ConversationSerializer(conversation).data, status=201)
 
     @action(detail=True, methods=["get", "post"], throttle_classes=[MessageThrottle])
@@ -102,6 +122,9 @@ class ConversationViewSet(viewsets.ViewSet):
         serializer = SendMessageSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         with transaction.atomic():
+            shop = Shop.objects.select_for_update().get(pk=conversation.shop_id)
+            if not shop_available(shop):
+                raise PermissionDenied("ร้านนี้ถูกระงับการแชต แต่ยังอ่านประวัติได้")
             values = serializer.validated_data
             if values.get('request_id'):
                 message, created = ShopMessage.objects.get_or_create(

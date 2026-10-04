@@ -1,6 +1,21 @@
 # THE_X AI chat — n8n + Gemini + PostgreSQL
 
-อัปเดต 2 ตุลาคม 2026: Django/Compose ชี้ webhook `the-x-rag-draft` ของ workflow **THE_X RAG - THE_ONE structure - SETUP REQUIRED** แล้ว และส่ง `conversation_id` ที่ตรวจ owner แล้วให้ flow นี้ด้วย แต่ workflow ยังไม่ Publish และ PostgreSQL Memory, PGVector, Gemini credential, คู่มือ และ citation handoff ยังตั้งค่าไม่ครบ จึงยังใช้งานแชต AI จริงไม่ได้ ห้าม Publish จนกว่าจะปิดรายการเหล่านี้และทดสอบ end-to-end ผ่าน
+อัปเดต 4 ตุลาคม 2026 (Executions): แชตตอบได้แต่แท็บ Executions ว่าง เพราะ Compose ตั้ง `EXECUTIONS_DATA_SAVE_ON_SUCCESS=none` และ `EXECUTIONS_DATA_SAVE_ON_ERROR=none` แม้ workflow ที่ Publish อยู่ตั้งค่าเป็น `all` แล้ว เปลี่ยน Compose และไฟล์ workflow ต้นทางเป็น `all`, recreate เฉพาะ n8n แล้วทดสอบ `hi` ผ่าน Django view อีกครั้ง: ได้ HTTP 200 และ n8n สร้าง execution `success` พร้อมเวลาเริ่ม–จบ รายการก่อนหน้าไม่ถูกเติมผลย้อนหลัง ปัจจุบันเก็บ payload ของ execution ทั้งสำเร็จและผิดพลาดไม่เกิน 24 ชั่วโมงก่อน prune (งานลบทำเป็นรอบ) จึงใช้ตรวจ node ได้ระหว่างพัฒนา; ข้อมูลแชตและ header ยืนยันตัวตนปรากฏใน execution data ให้จำกัดสิทธิ์ n8n/ฐานข้อมูลและทบทวนการตั้งค่านี้ก่อนเปิดใช้จริง
+
+อัปเดต 4 ตุลาคม 2026: Publish workflow หลัก `theXOneRagDraft` และรีสตาร์ต n8n แล้ว เพราะ webhook production ยังไม่ถูกลงทะเบียน ทำให้หน้าแชตบันทึกข้อความเป็น "ยังไม่ได้รับคำตอบ" ทดสอบจาก backend container ผ่าน webhook production ได้ HTTP 200 สำหรับ `hi`, สเปก GB350C ปี 2026 (348 ซีซี) และรุ่นสมมติ CB9999; ทดสอบผ่าน Django `ai_chat` view จริงได้ HTTP 200 และ turn `completed` โดย rollback ข้อมูลทดสอบหลังตรวจสอบ ข้อความเก่าที่ `failed` ต้องกด "ลองอีกครั้ง" หรือส่งคำถามใหม่ การส่ง citation จาก PGVector กลับ Flutter ยังไม่เสร็จ (`citation_ids: []`); ยังไม่ถือว่าประเมินคุณภาพคำตอบครบทุก 32 รุ่นหรือทดสอบด้วย browser จริง
+
+อัปเดต 3 ตุลาคม 2026: คีย์ Chat และ Embedding ชุดแรกตอบ `HTTP 403 PERMISSION_DENIED` พร้อมเหตุผล `CONSUMER_SUSPENDED` จึงไม่ได้ติดตั้งคีย์ชุดแรก คีย์ชุดที่สองผ่านการตรวจ `GET /v1beta/models` แล้วและนำเข้าเป็น credential แยกใน n8n (`THE_X Gemini Chat`, `THE_X Gemini Embedding`) โดยผูกกับ node ที่ตรงกันใน RAG draft ที่ยังไม่ Publish ทดสอบเรียก Chat รุ่น `gemini-3.5-flash-lite` ได้ 1 candidate และ Embedding `gemini-embedding-001` ได้เวกเตอร์ 3072 มิติ การทดสอบนี้ยืนยันการเรียกโมเดลโดยตรงเท่านั้น ยังไม่ได้ทดสอบ Agent/RAG แบบ end-to-end หรือประเมินคำตอบจากคู่มือจริง สคริปต์ `scripts/configure_rag_gemini.py` อ่านคีย์ผ่าน prompt ที่ซ่อนข้อความ ตรวจสิทธิ์ก่อน import และสำรอง workflow ก่อนแก้:
+
+```powershell
+python scripts/configure_rag_gemini.py
+python scripts/configure_rag_gemini.py --smoke-test
+```
+
+อย่าพิมพ์คีย์ในแชตหรือเก็บใน Git; คีย์ที่ส่งผ่านแชตแล้วควรหมุนใหม่ใน Google AI Studio ก่อนใช้งานจริง หลังหมุนคีย์ต้องอัปเดต credential ทั้งสองรายการใน n8n ด้วย
+
+AI PostgreSQL setup for the Postgres Chat Memory and PGVector Store nodes: [ai-rag-database.md](ai-rag-database.md). การเตรียมฐานแยกจากการ Publish workflow; สถานะเปิดใช้งานปัจจุบันอยู่ด้านบน
+
+อัปเดต 3 ตุลาคม 2026: Django/Compose ชี้ webhook `the-x-rag-draft` ของ workflow **THE_X RAG - THE_ONE structure - SETUP REQUIRED** แล้ว และส่ง `conversation_id` ที่ตรวจ owner แล้วให้ flow นี้ด้วย ฐาน AI และ credential ของ PostgreSQL/Gemini เชื่อมแล้ว นำเข้าสเปก BigWing ครบ 32 รุ่น/95 ช่วงข้อความใน PGVector; ชุดทดลอง 3 คำถามค้นคืนตรงรุ่นทั้งหมด มี 6 รุ่นที่ยังไม่ยืนยันปี จึงเก็บปีเป็นค่าว่างพร้อมธงเตือน ยังต้องทำ citation handoff, ทดสอบ Agent แบบ end-to-end และตรวจสิทธิ์การใช้แหล่งข้อมูลก่อน Publish; แอปยังใช้งานแชต AI จริงไม่ได้
 
 ## สถานะและขอบเขต
 
@@ -16,7 +31,7 @@ Workflow **THE_X AI Agent - THE_ONE style** เปิดได้ที่ http:
 
 ร่าง RAG ต่อครบ: Webhook → Agent พร้อม Gemini, Postgres Chat Memory, Vector Store QA Tool → PGVector Store + Gemini สำหรับสรุปหลักฐาน และ Gemini Embeddings ใต้ PGVector ไม่มี Ollama/chat-trigger ที่ไม่ได้ต่อใช้งานในต้นแบบ
 
-**ร่าง RAG ยังใช้งานกับแอปไม่ได้และยังไม่ Publish:** รอฐาน THE_X ที่เปิด pgvector, credentials แยกสำหรับ retrieval/memory, ingestion/embedding คู่มือ, การส่งกลับ citation ที่ตรวจสอบได้ และการทดสอบจริง Django ส่ง conversation UUID หลังตรวจ owner แล้ว และ guard ของ flow ยังปฏิเสธ payload ที่ไม่มี UUID
+**สถานะปัจจุบัน:** workflow หลัก Publish แล้วและตอบกลับผ่าน Django API ได้ ฐาน AI, credentials แยกสำหรับ retrieval/memory และเวกเตอร์สเปก BigWing 32 รุ่นพร้อมใช้งานสำหรับคำถามตัวอย่าง ยังไม่มีคู่มือซ่อมที่ตรวจทานหรือ citation จาก PGVector ที่ตรวจสอบได้ และยังไม่ได้ประเมินคุณภาพครบทุก 32 รุ่น Django ส่ง conversation UUID หลังตรวจ owner แล้ว และ guard ของ flow ปฏิเสธ payload ที่ไม่มี UUID
 
 ร่างใช้ `metadata` เป็น JSON column เดียว แทนค่าชื่อหลายคอลัมน์ที่พบในต้นแบบ; ต้องใส่ source/title/model/year/page ตอน ingest เลือก model/dimension ให้ตรงกันระหว่าง embed และค้น ลด topK จาก 5 เป็น 3 และ memory จาก 20 เป็น 4 เพื่อเริ่มทดสอบค่าใช้จ่าย ไม่ถือว่าค่านี้ให้คุณภาพดีที่สุดจนกว่าจะมี evaluation
 
@@ -38,7 +53,7 @@ flowchart LR
 
 อ่าน node behavior เพิ่มเติมจาก [n8n AI Agent](https://docs.n8n.io/integrations/builtin/cluster-nodes/root-nodes/n8n-nodes-langchain.agent) และ [Google Gemini Chat Model](https://docs.n8n.io/integrations/builtin/cluster-nodes/sub-nodes/n8n-nodes-langchain.lmchatgooglegemini)
 
-ตรวจแล้ว: import ลง n8n 2.28.6 สำเร็จ, contract tests ของการต่อ node/จำกัด context/tool/citations/errors ผ่าน และรันสำเนาทดสอบด้วย native Agent/Gemini node จริงโดยกำหนด credential ที่ไม่มีอยู่ เพื่อยืนยันว่า error ผ่าน `Validate answer` แล้วเป็น `unavailable` โดยไม่เรียก provider สำเนา `TEST ONLY native Agent missing credential` ไม่ได้ Publish และไม่มีผลต่อ flow แอป ยังไม่ได้ทดสอบคำตอบ Gemini จริง การตัดสินใจเรียก tool ของโมเดล หรือประเมินคุณภาพ RAG
+ผลทดสอบก่อนมีคีย์: import ลง n8n 2.28.6 สำเร็จ, contract tests ของการต่อ node/จำกัด context/tool/citations/errors ผ่าน และรันสำเนาทดสอบด้วย native Agent/Gemini node โดยกำหนด credential ที่ไม่มีอยู่ เพื่อยืนยันว่า error ผ่าน `Validate answer` แล้วเป็น `unavailable` โดยไม่เรียก provider สำเนา `TEST ONLY native Agent missing credential` ไม่ได้ Publish และไม่มีผลต่อ flow แอป ผลการเรียก Gemini จริงอยู่ในหัวข้อการตรวจสอบด้านล่าง
 
 ## สถาปัตยกรรม
 
@@ -46,7 +61,7 @@ Flutter → Django OIDC-protected API → n8n authenticated webhook → Gemini A
 
 - Django เป็นเจ้าของห้องสนทนาและประวัติใน PostgreSQL ฐานเดิม `the_x`; ตรวจ owner ทุกครั้ง ไม่ส่ง user ID, OIDC token, โปรไฟล์, รถ หรือข้อมูลจองไปให้ AI อัตโนมัติ
 - n8n ใช้ PostgreSQL อีก service/volume สำหรับ workflows และ encrypted credentials มีสิทธิ์แยกจากฐานธุรกิจ; editor เปิดเฉพาะ `127.0.0.1:15678`
-- Agent ใช้ n8n credential `THE_X Gemini native - enter key` ชนิด Google Gemini(PaLM) Api; webhook key คนละตัวกับ Google key
+- RAG Agent และ node ตอบจากหลักฐานใช้ credential `THE_X Gemini Chat`; node Embeddings ใช้ `THE_X Gemini Embedding` ชนิด Google Gemini(PaLM) Api; webhook key คนละตัวกับ Google key
 - Django รับ HTTP เฉพาะ `http://n8n:5678` เมื่อเปิด `AI_CHAT_INTERNAL_N8N=true` ใน compose เสริม; webhook อื่นต้อง HTTPS และห้าม redirect
 - ไม่ส่ง browser ไปหา n8n/Google โดยตรง ไม่มี key ใน Flutter bundle
 
@@ -69,10 +84,10 @@ docker compose --env-file deploy/.env -f compose.deploy.yaml -f compose.ai.yaml 
 
 1. เปิด [n8n ในเครื่อง](http://localhost:15678) สร้างบัญชี owner ของ n8n ด้วยข้อมูลที่ต้องการ บัญชีนี้แยกจาก Admin ของ THE_X
 2. สร้าง Gemini API key ใน [Google AI Studio](https://aistudio.google.com/apikey) ตรวจ project/free tier และโควตาของโมเดล ห้ามส่ง key ในแชตหรือ Git
-3. ใน n8n ไป Credentials → `THE_X Gemini native - enter key` → กรอก key ใน **API Key** โดยคง Host เป็น `https://generativelanguage.googleapis.com` → Save; ตรวจโมเดลและโควตาที่ใช้งานได้จริง
-4. เตรียมฐาน PGVector แยกสำหรับ THE_X และ credential สิทธิ์เท่าที่จำเป็นให้ Postgres Chat Memory กับ Postgres PGVector Store; ตั้งค่า Google Gemini ทั้ง node ตอบและ embedding โดยไม่คัดลอกข้อมูล/credential จาก THE_ONE
+3. Gemini credentials แยก Chat และ Embedding ตั้งค่าแล้ว; ก่อนใช้งานจริงให้หมุนคีย์ที่ส่งผ่านแชต แล้วอัปเดต credential ทั้งสองรายการใน n8n; ตรวจโควตาที่ใช้งานได้จริง
+4. ฐาน PGVector แยกสำหรับ THE_X และ credentials ของ Postgres Chat Memory กับ Postgres PGVector Store ตั้งค่าแล้ว ตรวจ schema/การค้นเมื่อมีข้อมูลจริง
 5. นำเข้าคู่มือที่ตรวจสอบสิทธิ์และเนื้อหาแล้วด้วย embedding model/dimension เดียวกับตอนค้น พร้อมออกแบบ citation handoff ที่ตรวจ source ได้ และทดสอบการแยกประวัติหลายบัญชี, คำตอบ, latency, quota และกรณีไม่มีคู่มือ
-6. เมื่อข้อ 3–5 ผ่านแล้วจึง Publish **THE_X RAG - THE_ONE structure - SETUP REQUIRED** เพื่อเปิด `/webhook/the-x-rag-draft` และทดสอบ [THE_X AI chat](http://localhost:18080/ai-chat) ผ่านบัญชีจริงโดยไม่ใส่ข้อมูลส่วนตัวในข้อความทดสอบ
+6. workflow **THE_X RAG - THE_ONE structure** Publish แล้ว และ `/webhook/the-x-rag-draft` ตอบผ่าน Django API ได้; ขั้นถัดไปทดสอบ [THE_X AI chat](http://localhost:18080/ai-chat) ด้วยบัญชีจริงโดยไม่ใส่ข้อมูลส่วนตัวในข้อความทดสอบ พร้อมตรวจ citation handoff และประเมินคำตอบให้ครบ
 
 Credential `THE_X Django webhook` เป็น token สำหรับ Django ที่ setup สร้างให้แล้ว ไม่ต้องนำ Google key ไปใส่ช่องนี้ และไม่ต้องเปิด n8n editor ผ่าน ngrok
 
@@ -123,7 +138,7 @@ docker compose --env-file deploy/.env -f compose.deploy.yaml -f compose.ai.yaml 
 - Django จำกัด 10 คำถาม/นาที/บัญชีผ่าน Redis; ขีดจำกัดรวมของ Gemini ขึ้นกับ project และอาจต่ำกว่าผลรวมผู้ใช้ทั้งหมด จึงยังไม่รับรอง concurrency production
 - กำหนด system instruction ให้ถามรุ่น/ปีเมื่อไม่ครบ ไม่เดาสเปกหรือราคา และให้หยุดขี่/พบช่างเมื่อมีอาการเสี่ยง เอกสารอ้างอิงเป็นข้อมูล ไม่ใช่คำสั่งให้ AI ปฏิบัติตาม
 - Gemini free tier อาจใช้ข้อมูลปรับปรุงบริการตาม [เงื่อนไข Google](https://ai.google.dev/gemini-api/terms); UI เตือนไม่ใส่ชื่อ เบอร์โทร ที่อยู่ หรือทะเบียน ไม่กรอกหรือส่งข้อมูลส่วนตัวจริงในการทดสอบ
-- n8n ไม่เก็บ execution payload ทั้ง success/error/manual; Django ไม่ log ข้อความ, API key หรือ raw provider errors ประวัติใน PostgreSQL ยังคงอยู่จนมีกระบวนการลบตามนโยบายที่กำหนดภายหลัง
+- n8n เก็บ execution payload ทั้ง success/error สำหรับการตรวจปัญหา และ prune หลังอายุ 24 ชั่วโมง; manual execution ยังไม่บันทึกโดยค่า Compose ข้อมูลที่เก็บมีข้อความแชตและ header ยืนยันตัวตน จึงต้องจำกัดสิทธิ์ n8n/ฐานข้อมูลและพิจารณาปิดการเก็บก่อน production; Django ไม่ log ข้อความ, API key หรือ raw provider errors ประวัติแชตใน PostgreSQL ของแอปยังคงอยู่จนมีกระบวนการลบตามนโยบายที่กำหนดภายหลัง
 
 ## การตรวจสอบ
 
@@ -141,7 +156,9 @@ docker compose --env-file deploy/.env -f compose.deploy.yaml -f compose.ai.yaml 
 
 ผ่านทดสอบ Flutter 17 cases และ analyzer; ทดสอบ AI API เรื่อง ownership, replay, timeout/retry, 429, pending recovery, context budget, citation filtering และ importer; ทดสอบ workflow contract ด้วย Node และทดสอบ integration ผ่าน n8n จริงกับคำตอบ **synthetic** ลง PostgreSQL test DB แล้ว (ไม่ได้เรียก Gemini) workflow ทดสอบ `TEST ONLY - THE_X synthetic smoke` ถูก Unpublish หลังทดสอบ
 
-ชุดคำถามภาษาไทย 30 ข้ออยู่ที่ `n8n/eval/thai_motorcycle.json` ยัง **ไม่ได้รันกับ Gemini** เมื่อ key พร้อมเริ่ม 3 ข้อก่อน:
+อัปเดต 3 ตุลาคม 2026: รัน `python scripts/test_rag_agent_live.py` กับ **n8n AI Agent + Gemini Chat + Vector Store QA Tool + PGVector + Gemini Embeddings จริง** ใน workflow แยก `TEST ONLY - THE_X live RAG smoke` ที่ยังไม่ Publish และไม่มี webhook/memory เชื่อม ผลทั้ง 3 คำถามเรียก vector tool จริง: GB350C ปี 2026 ตอบ 348 ซีซีตรงกับสเปก, CB1000GT ปี 2026 ตอบเครื่องยนต์ DOHC 4 สูบระบายความร้อนด้วยน้ำตรงกับสเปก, และรุ่นสมมติ CB9999 ปี 2031 ตอบว่าไม่มีข้อมูล การรันใช้เวลาประมาณ 13 วินาที รายงานตรวจซ้ำอยู่ที่ `.local/n8n/rag-live-smoke-report.json` (Git ignore) คำสั่ง `python scripts/test_rag_agent_live.py --report-only` อ่านผลเดิมโดยไม่เรียกโมเดลซ้ำ การทดสอบนี้พิสูจน์ว่าทาง n8n Agent ใช้ฐานเวกเตอร์ตอบคำถามตัวอย่างได้ แต่ยังไม่ครอบคลุม Flutter → Django → webhook, การแยกบัญชี, คุณภาพ 32 รุ่น หรือ citation handoff; `citation_ids` ยังเป็น `[]` ตามร่างเดิม
+
+ชุดประเมินภาษาไทย 30 ข้ออยู่ที่ `n8n/eval/thai_motorcycle.json` ยัง **ไม่ได้รันกับ Gemini ผ่านแอป**; smoke test 3 ข้อด้านบนเป็นคนละชุด เมื่อ citation handoff และ workflow พร้อมค่อยเริ่มชุดประเมินนี้:
 
 ```powershell
 docker compose --env-file deploy/.env -f compose.deploy.yaml -f compose.ai.yaml run --rm --no-deps -v "${PWD}/n8n/eval:/eval:ro" -v "${PWD}/.local:/results" backend python manage.py evaluate_ai_chat /eval/thai_motorcycle.json --output /results/gemini-eval-first.jsonl --limit 3 --delay 15 --run

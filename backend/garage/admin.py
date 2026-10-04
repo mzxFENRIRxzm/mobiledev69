@@ -107,15 +107,26 @@ class ShopAdminForm(forms.ModelForm):
 @admin.register(Shop)
 class ShopAdmin(admin.ModelAdmin):
     form = ShopAdminForm
-    list_display = ["name", "phone", "accepting_bookings", "mechanic_count"]
-    list_filter = ("accepting_bookings",)
+    list_display = ["name", "phone", "accepting_bookings", "moderation_status", "mechanic_count"]
+    list_filter = ("accepting_bookings", "moderation_status")
     search_fields = ("name", "address", "phone", "mechanics__username")
     filter_horizontal = ["mechanics"]
     list_per_page = 30
     fieldsets = (
         ("ข้อมูลร้าน", {"fields": ("name", "address", "phone", "description", "photo", "latitude", "longitude")}),
         ("การรับงานและสมาชิก", {"fields": ("accepting_bookings", "mechanics")}),
+        ("สถานะกำกับโดย Admin", {"fields": ("moderation_status", "suspended_until", "moderation_reason", "deleted_at")}),
     )
+
+    readonly_fields = ("moderation_status", "suspended_until", "moderation_reason", "deleted_at")
+
+    def has_change_permission(self, request, obj=None):
+        return (super().has_change_permission(request, obj) and
+                (obj is None or obj.moderation_status != Shop.ModerationStatus.DELETED))
+
+    def has_delete_permission(self, request, obj=None):
+        # Removing the row would destroy the history contract; use app moderation.
+        return False
 
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(member_count=Count("mechanics", distinct=True))
@@ -144,7 +155,7 @@ class BookingEventInline(admin.TabularInline):
 
 @admin.register(Booking)
 class BookingAdmin(admin.ModelAdmin):
-    list_display = ["id", "shop", "customer", "motorcycle_label", "mechanic", "status", "appointment_at"]
+    list_display = ["id", "shop", "customer", "motorcycle_label", "mechanic", "status", "appointment_at", "archived_at"]
     list_filter = ("status", ("shop", admin.RelatedOnlyFieldListFilter), "appointment_at")
     search_fields = ("=id", "customer__username", "mechanic__username", "motorcycle_label", "shop_name", "problem")
     date_hierarchy = "appointment_at"
@@ -155,7 +166,7 @@ class BookingAdmin(admin.ModelAdmin):
         ("ข้อมูลการจอง", {"fields": ("id", "customer", "shop", "shop_name", "motorcycle", "motorcycle_label", "appointment_at", "problem")}),
         ("ผลการดำเนินงาน", {"fields": ("mechanic", "status", "repair_notes", "cancellation_reason"),
          "description": "ดูประวัติได้ที่นี่ การรับงาน/เปลี่ยนสถานะให้ใช้ขั้นตอนในแอป THE_X"}),
-        ("เวลาในระบบ", {"fields": ("created_at", "updated_at")}),
+        ("เวลาในระบบ", {"fields": ("created_at", "updated_at", "archived_at", "archive_reason")}),
     )
     inlines = (BookingEventInline,)
     def has_change_permission(self, request, obj=None):

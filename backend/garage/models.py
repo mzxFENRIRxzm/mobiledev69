@@ -32,6 +32,8 @@ class Motorcycle(models.Model):
     year = models.PositiveIntegerField(validators=[MinValueValidator(1900), MaxValueValidator(2100)])
     mileage = models.PositiveIntegerField(default=0)
     notes = models.TextField(blank=True, max_length=2000)
+    archived_at = models.DateTimeField(null=True, blank=True)
+    archive_reason = models.TextField(max_length=1000, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -43,6 +45,12 @@ class Motorcycle(models.Model):
 
 
 class Shop(models.Model):
+    class ModerationStatus(models.TextChoices):
+        ACTIVE = "active", "ปกติ"
+        SUSPENDED = "suspended", "ระงับชั่วคราว"
+        BANNED = "banned", "แบนถาวร"
+        DELETED = "deleted", "ลบถาวรจากแอป"
+
     name = models.CharField(max_length=160)
     address = models.TextField(max_length=1000)
     phone = models.CharField(max_length=30)
@@ -54,6 +62,11 @@ class Shop(models.Model):
         validators=[MinValueValidator(-180), MaxValueValidator(180)])
     accepting_bookings = models.BooleanField(default=True)
     awaiting_owner_verification = models.BooleanField(default=False)
+    moderation_status = models.CharField(max_length=16, choices=ModerationStatus.choices,
+                                         default=ModerationStatus.ACTIVE)
+    suspended_until = models.DateTimeField(null=True, blank=True)
+    moderation_reason = models.TextField(max_length=1000, blank=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
     mechanics = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="service_shops", blank=True,
         limit_choices_to={"groups__name": "mechanics"})
 
@@ -89,6 +102,8 @@ class Booking(models.Model):
     problem = models.TextField(max_length=2000)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     repair_notes = models.TextField(max_length=2000, blank=True)
+    archived_at = models.DateTimeField(null=True, blank=True)
+    archive_reason = models.TextField(max_length=1000, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -113,6 +128,8 @@ class ShopConversation(models.Model):
     shop = models.ForeignKey(Shop, on_delete=models.PROTECT, related_name="conversations")
     customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="shop_conversations")
     created_at = models.DateTimeField(auto_now_add=True)
+    archived_at = models.DateTimeField(null=True, blank=True)
+    archive_reason = models.TextField(max_length=1000, blank=True)
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["shop", "customer"], name="one_conversation_per_shop_customer")]
@@ -124,6 +141,8 @@ class ShopMessage(models.Model):
     body = models.TextField(max_length=2000)
     request_id = models.UUIDField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    redacted_at = models.DateTimeField(null=True, blank=True)
+    redaction_reason = models.TextField(max_length=1000, blank=True)
 
     class Meta:
         ordering = ["created_at", "pk"]
@@ -138,6 +157,7 @@ class Notification(models.Model):
     booking = models.ForeignKey(Booking, null=True, blank=True, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     read_at = models.DateTimeField(null=True, blank=True)
+    hidden_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ['-pk']
@@ -149,6 +169,8 @@ class AiConversation(models.Model):
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     title = models.CharField(max_length=80, default="บทสนทนาใหม่")
     created_at = models.DateTimeField(auto_now_add=True)
+    archived_at = models.DateTimeField(null=True, blank=True)
+    archive_reason = models.TextField(max_length=1000, blank=True)
 
     class Meta:
         ordering = ["-created_at"]
@@ -193,3 +215,44 @@ class KnowledgeChunk(models.Model):
             raise ValidationError({"keywords": "ระบุรายการคำค้น 1–30 คำ แต่ละคำยาว 2–100 ตัวอักษร"})
         if not self.source_url.startswith(("https://", "http://")):
             raise ValidationError({"source_url": "ใช้ลิงก์ HTTP หรือ HTTPS ของแหล่งข้อมูล"})
+
+
+class MotorcycleKnowledge(models.Model):
+    """Admin-reviewed motorcycle facts, separate from customer-owned vehicles."""
+    brand = models.CharField(max_length=100)
+    model = models.CharField(max_length=160)
+    year = models.PositiveIntegerField(null=True, blank=True,
+        validators=[MinValueValidator(1900), MaxValueValidator(2100)])
+    section = models.CharField(max_length=120)
+    content = models.TextField(max_length=1800)
+    source_url = models.URLField(max_length=1000)
+    reviewed = models.BooleanField(default=False)
+    embedding_status = models.CharField(max_length=20, default="pending")
+    embedded_hash = models.CharField(max_length=64, blank=True)
+    embedded_at = models.DateTimeField(null=True, blank=True)
+    archived_at = models.DateTimeField(null=True, blank=True)
+    archive_reason = models.TextField(max_length=500, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at", "-pk"]
+
+
+class AiEmbeddingCredential(models.Model):
+    """One encrypted Gemini embedding credential; ciphertext is never serialized."""
+    encrypted_key = models.TextField()
+    key_hint = models.CharField(max_length=8)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class AdminAuditEvent(models.Model):
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    action = models.CharField(max_length=50)
+    target_type = models.CharField(max_length=50)
+    target_id = models.PositiveBigIntegerField(null=True, blank=True)
+    details = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-pk"]

@@ -71,13 +71,14 @@ def ai_conversations(request):
     if request.method == "POST":
         room = AiConversation.objects.create(owner=request.user)
         return private_response({"id": str(room.pk), "title": room.title}, status=201)
-    rooms = AiConversation.objects.filter(owner=request.user)[:50]
+    rooms = AiConversation.objects.filter(owner=request.user, archived_at__isnull=True)[:50]
     return private_response([{"id": str(r.pk), "title": r.title} for r in rooms])
 
 
 @api_view(["GET"])
 def ai_conversation(request, pk):
-    room = get_object_or_404(AiConversation, pk=pk, owner=request.user)
+    room = get_object_or_404(AiConversation, pk=pk, owner=request.user,
+                             archived_at__isnull=True)
     room.turns.filter(status="pending", updated_at__lt=timezone.now()-timedelta(seconds=60)).update(
         status="failed", error_code="timeout", updated_at=timezone.now())
     from .history import history_page
@@ -154,7 +155,8 @@ def ai_chat(request):
     with transaction.atomic():
         if values.get("conversation_id"):
             room = get_object_or_404(AiConversation.objects.select_for_update(),
-                                     pk=values["conversation_id"], owner=request.user)
+                                     pk=values["conversation_id"], owner=request.user,
+                                     archived_at__isnull=True)
         else:
             room = AiConversation.objects.create(owner=request.user, title=values["message"][:80])
         room.turns.filter(status="pending", updated_at__lt=timezone.now()-timedelta(seconds=60)).update(
