@@ -467,10 +467,6 @@ class _AdminScreenState extends State<AdminScreen> {
   Widget knowledgeTab() {
     final key = overview['embedding_key'] as Map?;
     return ListView(children: [
-      AdminKnowledgeDocuments(api: api),
-      const Divider(height: 32),
-      AdminVectorKnowledge(api: api),
-      const Divider(height: 32),
       Padding(padding: const EdgeInsets.all(12), child: Text(
         'ข้อมูลที่ Admin เพิ่มเอง', style: Theme.of(context).textTheme.titleLarge)),
       Padding(padding: const EdgeInsets.all(12), child: Wrap(spacing: 10, children: [
@@ -480,6 +476,13 @@ class _AdminScreenState extends State<AdminScreen> {
           label: Text(key?['configured'] == true
             ? 'เปลี่ยน API key (••••${key?['hint']})' : 'เพิ่ม API key')),
       ])),
+      const Divider(height: 32),
+      AdminKnowledgeDocuments(api: api),
+      const Divider(height: 32),
+      AdminVectorKnowledge(api: api),
+      const Divider(height: 32),
+      Padding(padding: const EdgeInsets.all(12), child: Text(
+        'รายการข้อมูลที่ Admin เพิ่มเอง', style: Theme.of(context).textTheme.titleLarge)),
       for (final row in knowledge) Card(child: Padding(padding: const EdgeInsets.all(12),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('${row['brand']} ${row['model']} · ${row['year'] ?? 'ไม่ระบุปี'}',
