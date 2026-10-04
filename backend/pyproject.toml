@@ -15,4 +15,7 @@ dependencies = [
   "gunicorn>=23,<24",
   "redis>=6,<7",
   "cryptography>=46,<47",
+  "pypdf>=6,<7",
+  "python-docx>=1.2,<2",
+  "openpyxl>=3.1,<4",
 ]

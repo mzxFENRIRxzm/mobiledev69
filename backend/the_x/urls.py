@@ -21,6 +21,7 @@ from garage.ai_chat import ai_chat, ai_conversations, ai_conversation
 from garage import admin_api
 from garage import admin_database
 from garage import admin_vectors
+from garage import admin_documents
 
 router = DefaultRouter()
 router.register("shops", ShopViewSet, basename="shop")
@@ -63,6 +64,12 @@ urlpatterns = [
     path("api/admin/knowledge/", admin_api.admin_knowledge),
     path("api/admin/knowledge/<int:pk>/", admin_api.admin_knowledge_item),
     path("api/admin/knowledge/<int:pk>/embed/", admin_api.admin_embed_knowledge),
+    path("api/admin/knowledge-documents/", admin_documents.admin_documents),
+    path("api/admin/knowledge-documents/<int:pk>/", admin_documents.admin_document),
+    path("api/admin/knowledge-documents/<int:pk>/sections/<int:index>/",
+         admin_documents.admin_document_section),
+    path("api/admin/knowledge-documents/<int:pk>/sections/<int:index>/embed/",
+         admin_documents.admin_embed_document_section),
     path("api/admin/ai-vectors/", admin_vectors.admin_vectors),
     path("api/admin/ai-vectors/<uuid:pk>/", admin_vectors.admin_vector_item),
     path("api/admin/embedding-key/", admin_api.admin_embedding_key),

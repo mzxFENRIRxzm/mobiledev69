@@ -239,6 +239,27 @@ class MotorcycleKnowledge(models.Model):
         ordering = ["-updated_at", "-pk"]
 
 
+class KnowledgeDocument(models.Model):
+    """Private extracted text from an admin upload; original binary is not served."""
+    filename = models.CharField(max_length=255)
+    file_type = models.CharField(max_length=12)
+    file_size = models.PositiveIntegerField()
+    sha256 = models.CharField(max_length=64)
+    title = models.CharField(max_length=200)
+    source_url = models.URLField(max_length=1000, blank=True)
+    brand = models.CharField(max_length=100, blank=True)
+    model = models.CharField(max_length=160, blank=True)
+    year = models.PositiveIntegerField(null=True, blank=True)
+    extracted_text = models.TextField()
+    sections = models.JSONField(default=list)
+    archived_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at", "-pk"]
+
+
 class AiEmbeddingCredential(models.Model):
     """One encrypted Gemini embedding credential; ciphertext is never serialized."""
     encrypted_key = models.TextField()

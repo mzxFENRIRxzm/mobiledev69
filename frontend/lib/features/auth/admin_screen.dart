@@ -9,6 +9,7 @@ import 'admin_management.dart';
 import 'admin_booking_dialog.dart';
 import 'admin_database_tab.dart';
 import 'admin_vector_knowledge.dart';
+import 'admin_knowledge_documents.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -466,6 +467,8 @@ class _AdminScreenState extends State<AdminScreen> {
   Widget knowledgeTab() {
     final key = overview['embedding_key'] as Map?;
     return ListView(children: [
+      AdminKnowledgeDocuments(api: api),
+      const Divider(height: 32),
       AdminVectorKnowledge(api: api),
       const Divider(height: 32),
       Padding(padding: const EdgeInsets.all(12), child: Text(
