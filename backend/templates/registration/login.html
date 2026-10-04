@@ -12,7 +12,7 @@
   <label for="id_username">ชื่อผู้ใช้</label>
   {{ form.username }}{{ form.username.errors }}
   <label for="id_password">รหัสผ่าน</label>
-  {{ form.password }}
+  <div class="the-x-password-control">{{ form.password }}</div>
   {{ form.password.errors }}
   <button class="primary" type="submit" id="login-submit">เข้าสู่ระบบ</button>
 </form>

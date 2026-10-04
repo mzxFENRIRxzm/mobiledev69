@@ -3,10 +3,13 @@
     document.querySelectorAll('input[type=password]').forEach(input => {
       if (input.dataset.passwordToggle) return;
       input.dataset.passwordToggle = 'true';
-      const wrapper = document.createElement('div');
-      wrapper.className = 'the-x-password-control';
-      input.before(wrapper);
-      wrapper.append(input);
+      let wrapper = input.parentElement;
+      if (!wrapper.classList.contains('the-x-password-control')) {
+        wrapper = document.createElement('div');
+        wrapper.className = 'the-x-password-control';
+        input.before(wrapper);
+        wrapper.append(input);
+      }
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'the-x-password-toggle';

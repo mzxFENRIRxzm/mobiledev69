@@ -4,6 +4,12 @@ from django.test import Client, TestCase
 
 
 class LoginRecoveryTests(TestCase):
+    def test_login_password_field_is_stable_for_browser_autofill(self):
+        response = self.client.get('/accounts/login/')
+        self.assertContains(response,
+            '<div class="the-x-password-control"><input type="password"')
+        self.assertContains(response, 'autocomplete="current-password"')
+
     def test_wrong_password_keeps_oidc_destination_and_never_echoes_password(self):
         password = secrets.token_urlsafe(24)
         get_user_model().objects.create_user(username='rider', password=password)
