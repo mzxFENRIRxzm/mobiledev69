@@ -63,4 +63,4 @@ docker compose --env-file deploy/.env -f compose.deploy.yaml stop
 
 `stop` เก็บ volume ไว้ การเปิดใหม่ใช้ `up -d --wait` โดยไม่ต้อง build หากโค้ดและ origin ไม่เปลี่ยน ก่อนย้ายเซิร์ฟเวอร์หรืออัปเดตที่มี migration ให้สำรอง `postgres_data` และ `media_data` ด้วยระบบ backup ที่เก็บไว้นอกเครื่อง Docker การมี volume ช่วยคงข้อมูลระหว่าง restart แต่ไม่ใช่ backup
 
-ชุด Compose นี้รองรับ THE_X ที่มีอยู่ในขอบเขต 4 ยังไม่รวม workflow n8n เพราะยังไม่มี workflow ของ THE_X ที่ต้องรัน และยังไม่ย้ายข้อมูลจากฐานข้อมูล dev หรือ THE_ONE อัตโนมัติ
+ชุด `compose.deploy.yaml` เพียงไฟล์เดียวเปิดแอปหลักโดยไม่เปิด n8n หากต้องการ AI ให้ใช้ `compose.ai.yaml` ร่วมกันตาม [คู่มือ AI/n8n](ai-chat-n8n.md) และ [ฐาน PGVector](ai-rag-database.md) workflow หลักบนเครื่องพัฒนา Publish แล้ว แต่ Docker volume, Credentials และข้อมูล Honda 95 passages ไม่ติดไปกับ GitHub clone และไม่มีการย้ายข้อมูลจากฐาน dev หรือ THE_ONE อัตโนมัติ ดู [ผล Browser smoke test ชุดส่งงาน](submission-demo.md)

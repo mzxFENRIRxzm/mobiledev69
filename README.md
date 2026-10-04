@@ -1,5 +1,21 @@
 # THE_X
 
+## เริ่มสาธิตจาก GitHub (PowerShell)
+
+ใช้ Docker Desktop และรันจาก **root ของ repository** หลัง clone branch `project`:
+
+```powershell
+git clone --branch project --single-branch https://github.com/mzxFENRIRxzm/mobiledev69.git
+Set-Location .\mobiledev69
+python scripts/init_docker.py
+docker compose --env-file deploy/.env -f compose.deploy.yaml up -d --build --wait
+docker compose --env-file deploy/.env -f compose.deploy.yaml exec backend python manage.py createsuperuser
+```
+
+เปิด `http://localhost:18080/` สมัคร Customer หรือผู้ให้บริการผ่านหน้า Login; บัญชี superuser จะเข้าสู่หน้า Admin ของ Flutter ที่ `/admin-dashboard` โดยอัตโนมัติ Docker ชุดพื้นฐานใช้ได้โดยไม่ต้องเปิด `flutter run` หรือ `manage.py runserver` เพิ่ม วิธีตั้งค่า AI/n8n แยกอยู่ใน [คู่มือ AI](docs/ai-chat-n8n.md) และ [คู่มือฐาน RAG](docs/ai-rag-database.md)
+
+**GitHub clone ไม่มีข้อมูลใน Docker volumes และไม่มี secrets**: บัญชีผู้ใช้, ร้าน, ประวัติการจอง, 95 ช่วงสเปก Honda BigWing ใน PGVector, Gemini/n8n credentials และ `deploy/.env` จากเครื่องพัฒนาไม่ถูกส่งขึ้น GitHub ดังนั้นหน้าแชต AI บนเครื่องใหม่จะยังตอบจากฐาน Honda ไม่ได้จนกว่าจะตั้งค่าและนำเข้าข้อมูลที่ตรวจแล้วด้วยตนเอง ดู [ผลทดสอบจริงและวิดีโอ](docs/submission-demo.md) เพื่อแยกสิ่งที่พร้อมสาธิตจากสิ่งที่ต้องเตรียมเพิ่ม
+
 ## Dashboard, map and chat
 
 Customer dashboard (`/garage`) now shows recent bookings and a map of service shops with saved coordinates. Select a marker to book or start a shop conversation. The message icon and THE_X menu also open customer–shop chat; mechanics see conversations for shops they currently belong to. Messages refresh every eight seconds and are stored in PostgreSQL. Only the customer and current shop mechanics can read or send in that room. The map uses OpenStreetMap tiles with visible attribution and requires an internet connection.
@@ -90,13 +106,14 @@ Flutter Web เก็บ OIDC session แยกตามแท็บแล้ว
 - Bookings: ค้นหาหมายเลขงาน ลูกค้า ช่าง รถ หรืออาการ กรองสถานะ/ร้าน/วันนัด พร้อมประวัติเปลี่ยนสถานะในหน้าเดียว
 - Booking events: ค้นประวัติตามงานและผู้ดำเนินการ ดูได้อย่างเดียว การเปลี่ยนสถานะยังต้องผ่าน workflow ในแอป
 
-ยังไม่มีเมนูฐานความรู้/Embedding, แชต และแจ้งเตือน เพราะฟีเจอร์เหล่านี้ยังไม่อยู่ใน THE_X รุ่นปัจจุบัน
+หน้า Flutter Admin มีหมวดผู้ใช้ ร้าน การจอง ฐานความรู้ AI (รวมข้อมูล PGVector ที่นำเข้า) และตัวดูฐานข้อมูลแบบปิดบังค่าลับ ส่วนแชตร้าน/ลูกค้าและการแจ้งเตือนอยู่ในแอปตามบทบาท ดู [ผลตรวจชุดส่งงาน](docs/submission-demo.md)
 
-1. ล็อกอิน Adminuser ใน profile Admin; Flutter จะเปิดหน้า `/admin-dashboard` พร้อมปุ่ม **จัดการผู้ใช้และบทบาท**
-2. ปุ่มเปิด Django admin → Users (`http://localhost:8000/admin/auth/user/`) หากมีหน้าล็อกอินให้ใช้บัญชี Admin เดิม
-3. เพิ่มผู้ใช้หรือเลือกผู้ใช้เดิม แล้วเลือก **บทบาท THE_X** เป็น Customeruser / Mechanicuser / Adminuser และกด Save
-4. หากเป็น Mechanicuser ให้เปิด Shops และกำหนดร้านที่ช่างเป็นสมาชิกด้วย บทบาทช่างอย่างเดียวไม่ให้สิทธิ์ทุกร้าน
-5. ให้ผู้ใช้โหลดแอปใหม่หลังเปลี่ยนบทบาท Backend ตรวจสิทธิ์จากฐานข้อมูลในแต่ละคำขอ ไม่เชื่อบทบาทจาก Flutter
+1. ล็อกอินด้วย superuser เหมือนบัญชีทั่วไป; Flutter จะเปิด `/admin-dashboard` โดยตรง
+2. เปิดแท็บ **ผู้ใช้** เลือกบัญชี แล้วแก้บทบาทเป็น สมาชิกทั่วไป / ผู้ให้บริการ / Admin และสถานะใช้งาน จากนั้นกดบันทึก
+3. หากเป็นผู้ให้บริการ ให้เปิดแท็บ **ร้านบริการ** → **ช่างประจำร้าน** แล้วเลือกร้านที่ช่างสังกัด บทบาทช่างอย่างเดียวไม่ให้สิทธิ์ทุกร้าน
+4. ให้ผู้ใช้โหลดแอปใหม่หลังเปลี่ยนบทบาท Backend ตรวจสิทธิ์จากฐานข้อมูลในแต่ละคำขอ ไม่เชื่อบทบาทจาก Flutter
+
+Django Admin ยังเปิดได้เป็นเครื่องมือสำรองที่ `/admin/` บน origin เดียวกับแอป (Docker demo: `http://localhost:18080/admin/`; โหมดพัฒนา: `http://localhost:8000/admin/`) แต่ไม่จำเป็นสำหรับงานจัดการหลักใน Flutter
 
 Adminuser คือ Django superuser ที่มีสิทธิ์ดูแลระบบทั้งหมด การกำหนดบทบาทผ่านหน้านี้จะแทนที่ groups/permissions เดิมด้วยสิทธิ์ของบทบาทที่เลือก เมื่อเปลี่ยนออกจาก Mechanic จะถอนสมาชิกของร้านด้วย แต่เก็บประวัติรถและการจองไว้ ต้องปิดงานซ่อมที่รับไว้ก่อนเปลี่ยนบทบาท ไม่อนุญาตลดสิทธิ์/ปิดใช้งาน Admin คนสุดท้าย และไม่เปิดให้ลบบัญชีจากหน้าจัดการนี้
 
@@ -252,7 +269,7 @@ docker compose stop
 
 ## Demo Video
 
-ยังไม่ได้บันทึกวิดีโอส่งรายวิชา ลิงก์จะเพิ่มเมื่อฟีเจอร์ส่งงานครบ ไม่ถือว่ารุ่นแรกนี้พร้อมส่งงานทั้งโปรเจกต์
+วิดีโอ Browser smoke test บน Docker วันที่ 4 ตุลาคม 2026: [Customer](docs/demo/customer.webm) · [Mechanic](docs/demo/mechanic.webm) · [Admin](docs/demo/admin.webm) พร้อม [ขั้นตอน ผลทดสอบ และข้อจำกัด](docs/submission-demo.md) วิดีโอใช้บัญชี QA ที่สุ่มสร้างและปิดใช้งานหลังทดสอบ ไม่ใช่บัญชี demo สำหรับผู้ตรวจงาน
 
 ## วิธีทดสอบด้วยตัวเอง
 
