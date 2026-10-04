@@ -1,20 +1,105 @@
 # THE_X
 
-## เริ่มสาธิตจาก GitHub (PowerShell)
+## เริ่มใช้งานจาก GitHub บน Windows (PowerShell + Docker)
 
-ใช้ Docker Desktop และรันจาก **root ของ repository** หลัง clone branch `project`:
+ขั้นตอนนี้สำหรับ **เครื่องใหม่ที่ยังไม่มี volume ของ THE_X** และรันทุกคำสั่งจาก root ของ repository หลัง `Set-Location` ไม่ต้องติดตั้ง Flutter SDK, uv หรือ Python packages สำหรับการเปิดแอปด้วย Docker; Docker จะ build Flutter Web และ Django ให้เอง ต้องมี Git, Python 3 ที่เรียกด้วย `python`, Docker Desktop ที่เปิด Engine แล้ว, Chrome และอินเทอร์เน็ตสำหรับดึง image/dependencies การตั้งค่า AI เพิ่มต้องมี Gemini API keys ที่ใช้ได้จริง คำสั่งในหัวข้อนี้ใช้ `localhost` และเปิดเฉพาะเครื่องนี้
+
+### 1. Clone และตรวจเครื่องมือ
 
 ```powershell
+git --version
+python --version
+docker version
+docker compose version
 git clone --branch project --single-branch https://github.com/mzxFENRIRxzm/mobiledev69.git
 Set-Location .\mobiledev69
+git branch --show-current
+```
+
+ผลบรรทัดสุดท้ายควรเป็น `project` หากเคย clone ไว้แล้ว ให้เข้าโฟลเดอร์เดิมแทนการ clone ทับ พอร์ต `18080`, `18443` และ `15678` ต้องว่าง; Compose ใช้ชื่อโครงการคงที่ `the_x_deploy` จึงไม่ควรเปิดสำเนาใหม่พร้อมชุดเดิมบน Docker Engine เดียวกัน
+
+### 2. เปิดแอปหลักและสร้าง Admin
+
+```powershell
 python scripts/init_docker.py
+docker compose --env-file deploy/.env -f compose.deploy.yaml config --quiet
 docker compose --env-file deploy/.env -f compose.deploy.yaml up -d --build --wait
+docker compose --env-file deploy/.env -f compose.deploy.yaml ps
 docker compose --env-file deploy/.env -f compose.deploy.yaml exec backend python manage.py createsuperuser
 ```
 
-เปิด `http://localhost:18080/` สมัคร Customer หรือผู้ให้บริการผ่านหน้า Login; บัญชี superuser จะเข้าสู่หน้า Admin ของ Flutter ที่ `/admin-dashboard` โดยอัตโนมัติ Docker ชุดพื้นฐานใช้ได้โดยไม่ต้องเปิด `flutter run` หรือ `manage.py runserver` เพิ่ม วิธีตั้งค่า AI/n8n แยกอยู่ใน [คู่มือ AI](docs/ai-chat-n8n.md) และ [คู่มือฐาน RAG](docs/ai-rag-database.md)
+`init_docker.py` สร้าง `deploy/.env` พร้อมรหัสฐานข้อมูลและ Django secret แบบสุ่ม **ครั้งแรกเท่านั้น**; ถ้ามีไฟล์นี้แล้วให้ข้ามคำสั่ง ไม่ลบหรือสร้างใหม่เพื่อแก้ปัญหา เพราะรหัสต้องตรงกับ Docker volume เดิม คำสั่ง `up --wait` ต้องจบโดยไม่มี service unhealthy ก่อนสร้าง Admin ตั้งชื่อและรหัสผ่านใหม่เมื่อ Django ถาม; README ไม่แจกบัญชี Admin สำเร็จรูป
 
-**GitHub clone ไม่มีข้อมูลใน Docker volumes และไม่มี secrets**: บัญชีผู้ใช้, ร้าน, ประวัติการจอง, 95 ช่วงสเปก Honda BigWing ใน PGVector, Gemini/n8n credentials และ `deploy/.env` จากเครื่องพัฒนาไม่ถูกส่งขึ้น GitHub ดังนั้นหน้าแชต AI บนเครื่องใหม่จะยังตอบจากฐาน Honda ไม่ได้จนกว่าจะตั้งค่าและนำเข้าข้อมูลที่ตรวจแล้วด้วยตนเอง ดู [ผลทดสอบจริงและวิดีโอ](docs/submission-demo.md) เพื่อแยกสิ่งที่พร้อมสาธิตจากสิ่งที่ต้องเตรียมเพิ่ม
+เปิด [THE_X](http://localhost:18080/) ใน Chrome แล้วสมัครบัญชี **Customer** และ **Mechanic/ผู้ให้บริการ** ผ่านหน้าล็อกอินของแอป ผู้ให้บริการกรอกข้อมูลร้านและปักหมุด จากนั้นล็อกอินด้วย superuser แบบเดียวกับผู้ใช้ทั่วไปเพื่อเข้าหน้า `/admin-dashboard`; Django admin สำรองอยู่ที่ [http://localhost:18080/admin/](http://localhost:18080/admin/) ลูกค้าลองเพิ่มรถ ค้นหาร้าน ส่งข้อความ และจองซ่อมได้ เมื่อใช้ Docker ชุดนี้ไม่ต้องเปิด `flutter run`, `manage.py runserver` หรือ `scripts/preview_web.py` อีก
+
+### 3. เปิด PostgreSQL สำหรับ AI และนำเข้า workflow n8n
+
+ทำขั้นนี้เมื่อต้องการทดสอบแชต AI/RAG; ระบบหลักในขั้นที่ 2 ใช้ได้โดยไม่ต้องเปิด n8n รันตามลำดับจาก root เดิม:
+
+```powershell
+python scripts/setup_n8n.py
+python scripts/setup_n8n_agent.py
+```
+
+เปิด [n8n](http://localhost:15678) และสร้างบัญชี owner ของ n8n ให้เสร็จ (คนละบัญชีกับ THE_X Admin) แล้วกลับมารัน:
+
+```powershell
+python scripts/setup_rag_db.py
+python scripts/connect_rag_nodes.py
+docker compose --env-file deploy/.env -f compose.deploy.yaml -f compose.ai.yaml up -d --build --wait
+docker compose --env-file deploy/.env -f compose.deploy.yaml -f compose.ai.yaml ps
+```
+
+สคริปต์สร้างรหัส n8n/webhook และฐาน AI แยกใน `deploy/.env`, นำเข้า workflow ครั้งแรก, ตั้งให้ Django ชี้ `the-x-rag-draft` และผูก credentials PostgreSQL สองตัวใน workflow **THE_X RAG - THE_ONE structure**: Chat Memory ใช้ฐาน `the_x_ai_memory`/ตาราง `the_x_ai_memory`; PGVector ใช้ฐาน `the_x_ai_vectors`/ตาราง `the_x_manual_vectors` โดยทั้งสองต่อ host `ai-postgres:5432` และใช้ผู้ใช้คนละตัว ตรวจใน n8n ว่า node ทั้งสองเลือก credential `THE_X AI Memory DB` และ `THE_X AI Vector DB` ตามลำดับ การเปิดแอปพร้อม AI ครั้งต่อไปต้องระบุ Compose **ทั้งสองไฟล์**
+
+### 4. ตั้งค่า Gemini และนำเข้าข้อมูลรถสำหรับ RAG
+
+สร้าง **Gemini Chat key และ Embedding key แยกกัน** ใน [Google AI Studio](https://aistudio.google.com/apikey) ตรวจสิทธิ์โมเดลและโควตาของ project จากนั้นรันคำสั่งนี้ขณะ workflow RAG ยังไม่ Publish; สคริปต์จะถาม key แบบซ่อนข้อความ ตรวจโมเดล และผูกกับ node Chat/Embedding โดยไม่เขียน key ลง Git:
+
+```powershell
+python scripts/configure_rag_gemini.py
+python scripts/configure_rag_gemini.py --smoke-test
+```
+
+การทดสอบ `--smoke-test` เรียกผู้ให้บริการจริงและใช้โควตา หากโมเดลใน workflow ไม่มีสิทธิ์ใช้ ต้องแก้การตั้งค่า/สิทธิ์ก่อน อย่าใส่ key ใน README, คำสั่ง shell, Flutter หรือแชต; key ที่เคยเผยแพร่ควรหมุนใหม่
+
+GitHub **ไม่มีฐานข้อมูล Honda จากเครื่องพัฒนา** หากต้องการเริ่มจากแหล่ง [Honda BigWing Thailand](https://www.thaihonda.co.th/hondabigbike/motorcycle) ให้เก็บหน้าเว็บและตรวจข้อมูลใน `.local/honda-bigwing/review.csv` รวมถึงสิทธิ์นำข้อมูลไปใช้ รุ่น/ปี/สเปก ก่อน embedding:
+
+```powershell
+python scripts/scrape_honda_bigwing.py
+python scripts/ingest_bigwing_pilot.py --all --dry-run
+```
+
+หลังตรวจข้อมูลและอนุญาตให้ใช้แล้ว จึงสั่งนำเข้า (ถาม Embedding key แบบซ่อนข้อความและใช้โควตา) และทดสอบการค้น:
+
+```powershell
+python scripts/ingest_bigwing_pilot.py --all
+python scripts/ingest_bigwing_pilot.py --verify
+```
+
+หาก `--all --dry-run` แจ้งว่ามีรุ่นไม่ผ่าน validation ให้ตรวจรายการ review flag, ปี และ snapshot ก่อน อย่าข้าม gate เพียงเพื่อให้จำนวนตรงกับเครื่องเดิม `--verify` ใช้ Embedding key อีกครั้งเพื่อทดสอบการค้นสามรุ่นแรกของ catalog ปัจจุบัน
+
+เปิด workflow **THE_X RAG - THE_ONE structure** ใน n8n ตรวจ node และ credentials ให้ครบ แล้วกด **Publish** เพื่อเปิด production webhook `the-x-rag-draft` จากนั้นล็อกอิน THE_X และถามคำถามที่มีหลักฐานจริงที่ [แชต AI](http://localhost:18080/ai-chat); ตรวจหน้า **Executions** ของ workflow และผลตอบกลับในแอป หากแอปตอบได้แต่ไม่พบ execution ให้ตรวจ URL webhook, Compose ที่เปิด และ workflow ที่กำลังดู ข้อมูลที่ scrape ใหม่อาจมีจำนวนรุ่นและ passages ต่างจากเครื่องพัฒนาเดิม (32 รุ่น/95 passages); ไม่ใช่ข้อมูลซ่อมครบทุกคัน และการส่ง citation จาก PGVector กลับ UI ยังมีข้อจำกัด ดูขั้นตอนและข้อควรระวังใน [คู่มือ AI/n8n](docs/ai-chat-n8n.md), [ฐาน RAG](docs/ai-rag-database.md) และ [ผลทดสอบจริง](docs/submission-demo.md)
+
+### 5. เปิดครั้งถัดไป หยุด และเก็บข้อมูล
+
+```powershell
+docker compose --env-file deploy/.env -f compose.deploy.yaml -f compose.ai.yaml up -d --wait
+docker compose --env-file deploy/.env -f compose.deploy.yaml -f compose.ai.yaml stop
+```
+
+ถ้ายังไม่ตั้งค่า AI ให้ใช้เฉพาะ `-f compose.deploy.yaml` ทั้งตอนเปิดและหยุด Docker volumes เก็บบัญชี ร้าน การจอง ประวัติแชต n8n และ PGVector แยกกัน; `deploy/.env` กับ `.local/n8n/` มีค่าและ marker สำคัญที่ Git ignore ก่อนลบโฟลเดอร์โปรเจกต์หรือย้ายเครื่อง ต้องสำรองไฟล์เหล่านี้ **พร้อม Docker volumes** ตาม [คู่มือ deploy](docs/docker-deployment.md) การ clone ซ้ำอย่างเดียวจะได้ **ระบบเปล่า** ไม่ได้บัญชี รหัสผ่าน workflow ที่แก้แล้ว credentials หรือข้อมูล Honda เดิม **อย่าใช้ `docker compose down -v`** หากต้องการเก็บข้อมูล
+
+โหมด localhost เปิด `LOCAL_USERNAME_RESET_ENABLED=true` สำหรับ demo ซึ่งผู้ที่รู้ username รีเซ็ตรหัส Customer/Mechanic ได้ ห้ามเปิดค่าดังกล่าวสู่สาธารณะ; การใช้งานผ่านโดเมน/HTTPS ต้องทำตาม [คู่มือ production deployment](docs/docker-deployment.md) และตั้งค่า SMTP, origin, secrets และการเข้าถึง n8n ใหม่ ไม่ใช่การเปลี่ยน `HTTP_BIND` อย่างเดียว
+
+ถ้า `up --wait` ไม่ผ่าน ให้ดูบริการที่มีปัญหาก่อนแก้ไขค่าใด ๆ:
+
+```powershell
+docker compose --env-file deploy/.env -f compose.deploy.yaml -f compose.ai.yaml ps
+docker compose --env-file deploy/.env -f compose.deploy.yaml -f compose.ai.yaml logs --tail 100 backend web n8n ai-postgres
+```
+
+ก่อนตั้งค่า AI ให้ตัด `-f compose.ai.yaml` ออกจากสองคำสั่งนี้ `init-1` ที่จบด้วย exit code 0 เป็นงานตั้งค่าครั้งเดียวตามปกติ ไม่ใช่ container ที่ต้องรันค้าง
 
 ## Dashboard, map and chat
 
@@ -129,7 +214,7 @@ Adminuser คือ Django superuser ที่มีสิทธิ์ดูแ�
 
 โครงสร้าง: `frontend/lib/features/` แยก presentation (View/ViewModel), data (Repository), domain (Model); `frontend/lib/core/` เป็น API/Auth service และ Result pattern; `backend/garage/` เป็น API กับ OIDC integration
 
-## Prerequisites
+## Prerequisites สำหรับโหมดพัฒนาแบบไม่ใช้ Docker ทั้งระบบ
 
 - [Flutter SDK](https://docs.flutter.dev/install) และ Chrome
 - [uv](https://docs.astral.sh/uv/getting-started/installation/) สำหรับ Python/dependencies
@@ -145,9 +230,9 @@ uv --version
 docker version
 ```
 
-## How to Run
+## How to Run: โหมดพัฒนาแบบ Backend + Flutter แยกกัน
 
-สำหรับเครื่องใหม่ clone branch `project`:
+ส่วนนี้เป็น **ทางเลือกสำหรับพัฒนา** และใช้ฐาน/พอร์ตต่างจาก Docker demo ด้านบน ถ้าต้องการเปิดจาก fresh clone เพื่อสาธิตให้ทำตามขั้นตอน Docker ด้านบน ไม่ต้องรันสองชุดพร้อมกัน สำหรับเครื่องใหม่ clone branch `project`:
 
 ```powershell
 git clone --branch project --single-branch https://github.com/mzxFENRIRxzm/mobiledev69.git
@@ -252,6 +337,8 @@ docker compose stop
 ข้อมูลรถยังอยู่ใน volume สำหรับการเปิดรอบถัดไป
 
 ## Demo Account
+
+บัญชีด้านล่างสร้างโดย `bootstrap_dev` ใน **โหมดพัฒนา** เท่านั้น Fresh Docker clone ไม่มีบัญชีเหล่านี้; ให้สมัครผ่านหน้าแอปและสร้าง superuser ตามขั้นตอนที่ 2
 
 - Username: `student01`
 - Password: ค่า `DEMO_PASSWORD` ใน `backend/.env` ที่สร้างบนเครื่องคุณ เปิดอ่านใน editor เป็นการส่วนตัว
