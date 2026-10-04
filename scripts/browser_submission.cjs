@@ -20,6 +20,7 @@ let browser;
 let stage = 'start';
 let shopId;
 let currentSession;
+const sessions = [];
 
 function django(script) {
   const p = spawnSync('docker', [...compose, 'exec', '-T', 'backend', 'python', 'manage.py', 'shell'], {
@@ -51,6 +52,7 @@ async function newPage(role) {
     if (r.url().includes('/api/admin/users/')) console.log(`GET ${new URL(r.url()).pathname}${new URL(r.url()).search}`);
   });
   currentSession = { context, page, errors, role };
+  sessions.push(currentSession);
   return currentSession;
 }
 async function finish(session) {
@@ -61,7 +63,8 @@ async function finish(session) {
   fs.copyFileSync(src, dest);
   if (session.errors.length) console.log(`${session.role} page errors: ${JSON.stringify(session.errors)}`);
   console.log(`VIDEO ${dest}`);
-  currentSession = null;
+  sessions.splice(sessions.indexOf(session), 1);
+  if (currentSession === session) currentSession = sessions.at(-1) || null;
 }
 async function login(session, username) {
   const { page } = session;
@@ -172,7 +175,7 @@ async function checkCustomer() {
   console.log(`PASS customer AI answer: ${answer.reply.slice(0, 100)}; sources=${answer.sources?.length || 0}`);
   await page.waitForTimeout(2000);
   await page.screenshot({ path: path.join(evidence, 'customer-ai.png') });
-  await finish(session);
+  return session;
 }
 async function checkMechanic() {
   stage = 'mechanic login and booking';
@@ -216,7 +219,7 @@ async function checkMechanic() {
   console.log('PASS mechanic chat reply');
   await page.waitForTimeout(500);
   await page.screenshot({ path: path.join(evidence, 'mechanic-chat.png') });
-  await finish(session);
+  return session;
 }
 async function checkAdmin() {
   stage = 'admin dashboard';
@@ -256,7 +259,42 @@ async function checkAdmin() {
   await page.waitForTimeout(300);
   await page.screenshot({ path: path.join(evidence, 'admin-database.png') });
   console.log('PASS admin database tab');
-  await finish(session);
+  return session;
+}
+async function checkConcurrentSessions(customer, mechanic, admin) {
+  stage = 'three concurrent sessions';
+  await customer.page.goto(`${base}/bookings`);
+  await semantics(customer.page);
+  await customer.page.getByRole('button', { name: new RegExp(`${label}[\\s\\S]*เสร็จแล้ว`) }).click();
+  assert.match(await customer.page.locator('body').ariaSnapshot(), new RegExp(`QA repair complete ${label}`));
+  await customer.page.screenshot({ path: path.join(evidence, 'customer-completed.png') });
+  await customer.page.getByRole('button', { name: /การแจ้งเตือน \([1-9]/ }).click();
+  assert.match(await customer.page.locator('body').ariaSnapshot(), /ข้อความใหม่/);
+  await customer.page.getByRole('button', { name: 'Dismiss' }).click();
+  console.log('PASS customer sees completed booking and mechanic reply notification');
+
+  const [customerMe] = await Promise.all([
+    customer.page.waitForResponse(r => r.url().endsWith('/api/me/') && r.request().method() === 'GET'),
+    customer.page.reload(),
+  ]);
+  assert.equal((await customerMe.json()).username, names.customer);
+  await semantics(customer.page);
+  await customer.page.getByRole('heading', { name: /การจองซ่อม/ }).waitFor();
+  const [mechanicMe] = await Promise.all([
+    mechanic.page.waitForResponse(r => r.url().endsWith('/api/me/') && r.request().method() === 'GET'),
+    mechanic.page.reload(),
+  ]);
+  assert.equal((await mechanicMe.json()).username, names.mechanic);
+  await semantics(mechanic.page);
+  await mechanic.page.getByRole('heading', { name: /ข้อความ/ }).waitFor();
+  const [adminMe] = await Promise.all([
+    admin.page.waitForResponse(r => r.url().endsWith('/api/me/') && r.request().method() === 'GET'),
+    admin.page.reload(),
+  ]);
+  assert.equal((await adminMe.json()).username, names.admin);
+  await semantics(admin.page);
+  await admin.page.getByText('ดูแล THE_X จากที่เดียว').waitFor();
+  console.log('PASS Customer, Mechanic and Admin sessions remain isolated after reload');
 }
 async function main() {
   stage = 'create fixture';
@@ -264,20 +302,24 @@ async function main() {
   const found = django(`from garage.models import Shop\nprint(Shop.objects.get(name=${JSON.stringify(`QA Submission ${runId}`)}).pk)\n`);
   shopId = Number(found.split(/\r?\n/).at(-1));
   browser = await chromium.launch({ channel: 'chrome', headless: true });
-  await checkCustomer();
-  await checkMechanic();
-  await checkAdmin();
+  const customer = await checkCustomer();
+  const mechanic = await checkMechanic();
+  const admin = await checkAdmin();
+  await checkConcurrentSessions(customer, mechanic, admin);
+  for (const session of [...sessions]) await finish(session);
   console.log(`PASS submission smoke evidence: ${evidence}`);
 }
 main().catch(error => {
   console.error(`FAIL ${stage}: ${String(error.message).replaceAll(password, '[redacted]').replace(/code=[^&\s]+/g, 'code=[redacted]')}`);
   process.exitCode = 1;
 }).finally(async () => {
-  if (currentSession) {
+  for (const session of [...sessions]) {
     try {
-      console.error((await currentSession.page.locator('body').ariaSnapshot()).slice(0, 1800));
-      await currentSession.page.screenshot({ path: path.join(evidence, `failure-${currentSession.role}.png`) });
-      await finish(currentSession);
+      if (session === currentSession && process.exitCode) {
+        console.error((await session.page.locator('body').ariaSnapshot()).slice(0, 1800));
+        await session.page.screenshot({ path: path.join(evidence, `failure-${session.role}.png`) });
+      }
+      await finish(session);
     } catch (error) { console.error(`Evidence capture failed: ${error.message}`); }
   }
   if (browser) await browser.close();
